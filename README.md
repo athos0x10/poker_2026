@@ -17,7 +17,30 @@ Pour garantir le **temps réel** et la **performance**, ces classes gèrent l'é
 * **Action :** Enregistre chaque mouvement (Mise, fold, check) pour la logique de jeu.
 * **MessageChat :** Gère les flux de communication du **Chat**.
 
-## 3. Autres fonctionnalités
+## 3. Fonctionnalités
+### 1. Authentification et Gestion des Joueurs
+* Inscription et connexion sécurisée (hachage des mots de passe).
+* Gestion du profil joueur (Avatar, Biographie).
+* Portefeuille virtuel (Système de jetons globaux mis à jour après chaque table).
+* Suivi de l'expérience (Niveaux de joueur).
+
+### 2. Dimension Sociale
+* **Système d'Amis :** Envoi, acceptation et refus d'invitations entre joueurs.
+* **Chat Temps Réel :** Espace de discussion global sur chaque table via WebSockets.
+
+### 3. Moteur de Jeu Poker (Temps Réel)
+* **Lobby (Salle d'attente) :** Liste des tables disponibles, création de nouvelles tables (publiques ou privées).
+* **Gestion des Sessions :** Un joueur peut rejoindre plusieurs tables simultanément.
+* **Déroulement d'une Main :**
+    * Distribution aléatoire des cartes (Hole cards & Community cards).
+    * Gestion stricte des tours de parole (Bouton Dealer, Petite/Grosse Blinde).
+    * Actions supportées : *Fold* (Coucher), *Check* (Parole), *Call* (Suivre), *Raise* (Relancer), *All-In* (Tapis).
+* **Évaluation des Mains :** Algorithme de calcul de la meilleure combinaison de 5 cartes (Paire, Double Paire, Brelan, Suite, Couleur, Full, Carré, Quinte Flush).
+* **Distribution des Gains :** Répartition du pot (gestion des égalités "Split Pot").
+
+### 4. Historique et Classement [cite: 13]
+* **Leaderboard (Classement) :** Affichage des meilleurs joueurs basé sur l'expérience ou le total du portefeuille.
+* **Historique des Parties :** Consultation des résultats des dernières mains jouées (gains/pertes).
 
 ## 4. Architecture Java
 ```
@@ -48,16 +71,17 @@ src/
 ## 5. Diagramme de classe 
 ```mermaid
 classDiagram
-    direction TB
 
-    %% Bloc Persistant
+    %% --- BLOC PERSISTANT (JPA / BDD) ---
     class Utilisateur {
         +Long id
         +String login
         +String passwordHash
         +String email
         +Date createdAt
+        +authenticate(String password) boolean
     }
+
     class Profil {
         +Long id
         +Long userId
@@ -65,51 +89,101 @@ classDiagram
         +String bio
         +int experiencePoints
         +int level
+        +addExperience(int points) void
     }
+
     class Portefeuille {
         +Long id
         +Long userId
         +double globalBalance
+        +addFunds(double amount) void
+        +withdraw(double amount) boolean
     }
+
     class Amitie {
         +Long id
         +Long user1Id
         +Long user2Id
-        +String status
+        +FriendStatus status
         +Date since
     }
+    
+    class FriendStatus {
+        <<enumeration>>
+        PENDING
+        ACCEPTED
+        BLOCKED
+    }
 
-    %% Bloc Temps Réel
+    %% --- BLOC DE JEU (EN MÉMOIRE / TEMPS RÉEL) ---
+    class GameState {
+        <<enumeration>>
+        WAITING_FOR_PLAYERS
+        PRE_FLOP
+        FLOP
+        TURN
+        RIVER
+        SHOWDOWN
+    }
+
+    class ActionType {
+        <<enumeration>>
+        FOLD
+        CHECK
+        CALL
+        RAISE
+        ALL_IN
+    }
+
+    class Carte {
+        +String rank
+        +String suit
+    }
+
     class Table {
         +Long id
         +String name
         +double minBet
         +int maxPlayers
-        +boolean isPrivate
-        +String gameState
+        +GameState state
+        +List~SessionJoueur~ activePlayers
+        +List~MessageChat~ chatHistory
+        +broadcastState() void
+        +addPlayer(Utilisateur u) boolean
+        +removePlayer(SessionJoueur p) void
     }
+
     class SessionJoueur {
         +Long id
         +Long tableId
         +Long userId
         +double currentStack
         +int seatNumber
+        +List~Carte~ holeCards
+        +boolean hasFolded
+        +boolean isAllIn
+        +placeBet(double amount, ActionType type) Action
     }
+
     class Main {
         +Long id
         +Long tableId
         +double potAmount
-        +String communityCards
+        +List~Carte~ communityCards
         +Date startTime
+        +int currentTurnIndex
+        +SessionJoueur dealerButton
     }
+
     class Action {
         +Long id
         +Long handId
         +Long playerSessionId
-        +String type
+        +ActionType type
         +double amount
         +Date timestamp
     }
+    
     class MessageChat {
         +Long id
         +Long tableId
@@ -118,19 +192,26 @@ classDiagram
         +Date sentAt
     }
 
-    %% Relations
+    %% --- LOGIQUE MÉTIER (SANS ÉTAT) ---
+    class PokerEngine {
+        +startNewHand(Table t) Main
+        +processAction(Main m, Action a) boolean
+        +evaluateShowdown(Main m) void
+        +determineWinners(List~SessionJoueur~ players, List~Carte~ communityCards) List~SessionJoueur~
+    }
+
+    %% --- RELATIONS ---
     Utilisateur "1" -- "1" Profil : possède
     Utilisateur "1" -- "1" Portefeuille : détient
     Utilisateur "1" -- "*" Amitie : initie / reçoit
     Utilisateur "1" -- "*" SessionJoueur : participe via
-    Utilisateur "1" -- "*" MessageChat : envoie
 
     Table "1" -- "*" SessionJoueur : accueille
-    Table "1" -- "*" Main : déroule
+    Table "1" -- "1" Main : currentHand
     Table "1" -- "*" MessageChat : contient
 
-    SessionJoueur "1" -- "*" Action : effectue
     Main "1" -- "*" Action : enregistre
+    SessionJoueur "1" -- "*" Action : effectue
 ```
 
 ## 6. Diagramme d'usage
