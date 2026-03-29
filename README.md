@@ -18,6 +18,7 @@ Pour garantir le **temps réel** et la **performance**, ces classes gèrent l'é
 * **MessageChat :** Gère les flux de communication du **Chat**.
 
 ## Architecture Java
+```
 src/
  ├── main/
  │    ├── java/com/projet/poker/
@@ -40,6 +41,7 @@ src/
  │         └── WEB-INF/
  │              └── jsp/                      # Vos vues JSP (si vous ne commencez pas directement par React)
  └── pom.xml                                  # Dépendances (Spring Web, Spring Data JPA, H2/MySQL, WebSockets)
+```
 
 ## Diagramme de classe 
 ```mermaid
