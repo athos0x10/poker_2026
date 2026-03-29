@@ -23,13 +23,13 @@ src/
  ├── main/
  │    ├── java/com/projet/poker/
  │    │    ├── PokerApplication.java          # Point d'entrée SpringBoot
- │    │    ├── model/                         # Vos 9 Entités (JPA @Entity ou simples POJOs)
+ │    │    ├── model/                         # Entités (JPA @Entity ou simples POJOs)
  │    │    │    ├── persist/                  # Utilisateur, Profil, Portefeuille, Amitie
  │    │    │    └── game/                     # Table, SessionJoueur, Main, Action (État en mémoire)
  │    │    ├── repository/                    # Interfaces Spring Data JPA (UtilisateurRepository...)
  │    │    ├── service/                       # Les "Facades" contenant la logique métier (UserService, GameService)
  │    │    ├── controller/                    # Les Servlets ou @RestController (gèrent les requêtes HTTP/WebSockets)
- │    │    ├── dto/                           # Data Transfer Objects (Crucial ! Ne renvoyez jamais vos Entités JPA directement à la vue)
+ │    │    ├── dto/                           # Data Transfer Objects (Pour ne pas renvoyer directement les Entités JPA à la vue)
  │    │    ├── config/                        # Configuration Spring (WebSockets, Sécurité, BDD)
  │    │    └── engine/                        # Moteur du jeu de Poker (PUREMENT Java : règles, calcul des mains. Indépendant de Spring)
  │    │
@@ -39,7 +39,7 @@ src/
  │    │
  │    └── webapp/
  │         └── WEB-INF/
- │              └── jsp/                      # Vos vues JSP (si vous ne commencez pas directement par React)
+ │              └── jsp/                      # Vues JSP
  └── pom.xml                                  # Dépendances (Spring Web, Spring Data JPA, H2/MySQL, WebSockets)
 ```
 
