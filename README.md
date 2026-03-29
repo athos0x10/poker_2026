@@ -38,7 +38,7 @@ Pour garantir le **temps réel** et la **performance**, ces classes gèrent l'é
 * **Évaluation des Mains :** Algorithme de calcul de la meilleure combinaison de 5 cartes (Paire, Double Paire, Brelan, Suite, Couleur, Full, Carré, Quinte Flush).
 * **Distribution des Gains :** Répartition du pot (gestion des égalités "Split Pot").
 
-### 4. Historique et Classement [cite: 13]
+### 4. Historique et Classement
 * **Leaderboard (Classement) :** Affichage des meilleurs joueurs basé sur l'expérience ou le total du portefeuille.
 * **Historique des Parties :** Consultation des résultats des dernières mains jouées (gains/pertes).
 
