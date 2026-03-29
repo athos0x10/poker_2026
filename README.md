@@ -17,7 +17,9 @@ Pour garantir le **temps réel** et la **performance**, ces classes gèrent l'é
 * **Action :** Enregistre chaque mouvement (Mise, fold, check) pour la logique de jeu.
 * **MessageChat :** Gère les flux de communication du **Chat**.
 
-## Architecture Java
+## 3. Autres fonctionnalités
+
+## 4. Architecture Java
 ```
 src/
  ├── main/
@@ -43,7 +45,7 @@ src/
  └── pom.xml                                  # Dépendances (Spring Web, Spring Data JPA, H2/MySQL, WebSockets)
 ```
 
-## Diagramme de classe 
+## 5. Diagramme de classe 
 ```mermaid
 classDiagram
     direction TB
@@ -131,7 +133,7 @@ classDiagram
     Main "1" -- "*" Action : enregistre
 ```
 
-## Diagramme d'usage
+## 6. Diagramme d'usage
 ```mermaid
 flowchart LR
     %% Acteur
