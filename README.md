@@ -89,7 +89,8 @@ classDiagram
         +String bio
         +int experiencePoints
         +int level
-        +addExperience(int points) void
+        +addExperiencePoints(int points) void
+        +calculerNiveau() void
     }
 
     class Portefeuille {
