@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 
 
 @Entity
+@Table(uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user1_id", "user2_id"})
+}) // evite une amitie AB et BA
 public class Amitie {
     // Attributs de l'entité Profil
 
@@ -16,10 +19,6 @@ public class Amitie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     // L'identifiant unique de l'amitie
     private Long id;
-    // ID de l'user 1
-    private Long user1Id;
-    // ID de l'user 2
-    private Long user2Id;
     // Status de l'amitie : PENDING, ACCEPTED, BLOCKED
     private FriendStatus status;
     // Date de creation de l'amitie
@@ -28,9 +27,11 @@ public class Amitie {
     // Relations avec d'autres entités
     // Relation ManyToOne avec l'entité Utilisateur 1
     @ManyToOne
+    @JoinColumn(name = "user1_id")
     private Utilisateur user1;
     // Relation ManyToOne avec l'entité Utilisateur 2
     @ManyToOne
+    @JoinColumn(name = "user2_id")
     private Utilisateur user2;
 
 
@@ -52,12 +53,20 @@ public class Amitie {
      * @param since La date de création de l'amitié
      */
     public Amitie(Utilisateur user1, Utilisateur user2, FriendStatus status, LocalDateTime since) {
-        this.user1Id = user1.getId();
-        this.user2Id = user2.getId();
         this.status = status;
         this.since = since;
         this.user1 = user1;
         this.user2 = user2;
+        validerNonAutoAmitie();
+    }
+
+    // verification que l'amitie est possible 
+    @PrePersist
+    @PreUpdate
+    private void validerNonAutoAmitie() {
+        if (user1 != null && user2 != null && user1.getId().equals(user2.getId())) {
+            throw new IllegalStateException("Un utilisateur ne peut pas créer une amitié avec lui-même.");
+        }
     }
 
     // Getters et setters pour les attributs de l'entité Amitie
@@ -110,23 +119,6 @@ public class Amitie {
     public void setId(Long id) {
         this.id = id;
     }
-
-    // Getters et setters pour les relations avec d'autres entités
-    /**
-     * Obtient l'ID de utilisateur 1 associé à cette amitie
-     */
-    public Long getIdUtilisateur1() {
-        return user1Id;
-    }
-
-    // Getters et setters pour les relations avec d'autres entités
-    /**
-     * Obtient l'ID de utilisateur 1 associé à cette amitie
-     */
-    public Long getIdUtilisateur2() {
-        return user2Id;
-    }
-
 
     // Getters et setters pour les relations avec d'autres entités
     /**
