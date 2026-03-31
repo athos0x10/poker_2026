@@ -80,11 +80,11 @@ classDiagram
         +String email
         +Date createdAt
         +authenticate(String password) boolean
+        +getAmities() List<Amitie>
     }
 
     class Profil {
         +Long id
-        +Long userId
         +String avatarUrl
         +String bio
         +int experiencePoints
@@ -95,7 +95,6 @@ classDiagram
 
     class Portefeuille {
         +Long id
-        +Long userId
         +double globalBalance
         +addFunds(double amount) void
         +withdraw(double amount) boolean
@@ -103,8 +102,6 @@ classDiagram
 
     class Amitie {
         +Long id
-        +Long user1Id
-        +Long user2Id
         +FriendStatus status
         +Date since
     }
@@ -204,7 +201,8 @@ classDiagram
     %% --- RELATIONS ---
     Utilisateur "1" -- "1" Profil : possède
     Utilisateur "1" -- "1" Portefeuille : détient
-    Utilisateur "1" -- "*" Amitie : initie / reçoit
+    Utilisateur "1" -- "*" Amitie : est demandeur
+    Utilisateur "1" -- "*" Amitie : est receveur
     Utilisateur "1" -- "*" SessionJoueur : participe via
 
     Table "1" -- "*" SessionJoueur : accueille
@@ -244,3 +242,12 @@ flowchart LR
     UC5 -. "<< extends >>" .-> UC4
     UC6 -. "<< extends >>" .-> UC4
 ```
+
+## 7. Résumé des Relations Base de Données (Bloc Persistant)
+
+| Table         | Clé Primaire (PK) | Clé Étrangère (FK)             | Type de Relation        | Description de la Jointure                                                                 |
+|--------------|-------------------|--------------------------------|-------------------------|--------------------------------------------------------------------------------------------|
+| Utilisateur  | id                | -                              | -                       | Entité pivot (Parent).                                                                     |
+| Profil       | id                | utilisateur_id                 | 1:1 (One-to-One)        | Jointure unique vers l'ID d'un Utilisateur.                                                |
+| Portefeuille | id                | utilisateur_id                 | 1:1 (One-to-One)        | Jointure unique vers l'ID d'un Utilisateur.                                                |
+| Amitie       | id                | demandeur_id, receveur_id      | N:1 (Many-to-One)       | Jointure réflexive double : deux clés pointant vers la table Utilisateur pour les parties. |
