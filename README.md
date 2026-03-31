@@ -245,9 +245,9 @@ flowchart LR
 
 ## 7. Résumé des Relations Base de Données (Bloc Persistant)
 
-| Table         | Clé Primaire (PK) | Clé Étrangère (FK)             | Type de Relation        | Description de la Jointure                                                                 |
-|--------------|-------------------|--------------------------------|-------------------------|--------------------------------------------------------------------------------------------|
-| Utilisateur  | id                | -                              | -                       | Entité pivot (Parent).                                                                     |
-| Profil       | id                | utilisateur_id                 | 1:1 (One-to-One)        | Jointure unique vers l'ID d'un Utilisateur.                                                |
-| Portefeuille | id                | utilisateur_id                 | 1:1 (One-to-One)        | Jointure unique vers l'ID d'un Utilisateur.                                                |
-| Amitie       | id                | demandeur_id, receveur_id      | N:1 (Many-to-One)       | Jointure réflexive double : deux clés pointant vers la table Utilisateur pour les parties. |
+| Table         | Clé Étrangère (FK) | Nature de la FK                  |
+|--------------|-------------------|----------------------------------|
+| Profil       | utilisateur_id     | Pointe vers Utilisateur(id)       |
+| Portefeuille | utilisateur_id     | Pointe vers Utilisateur(id)       |
+| Amitie       | demandeur_id       | Pointe vers Utilisateur(id)       |
+| Amitie       | receveur_id        | Pointe vers Utilisateur(id)       |

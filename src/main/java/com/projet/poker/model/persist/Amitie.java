@@ -1,6 +1,7 @@
 package com.projet.poker.model.persist;
 
 import jakarta.persistence.*;
+import jakarta.persistence.EnumType;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,6 +17,7 @@ public class Amitie {
     private Long id;
 
     // Status de l'amitie : PENDING, ACCEPTED, BLOCKED
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FriendStatus status;
 
@@ -62,7 +64,7 @@ public class Amitie {
     @PrePersist
     @PreUpdate
     private void validerNonAutoAmitie() {
-        if (user_demandeur != null && user_recepteur != null && user_demandeur.getId().equals(user_recepteur.getId())) {
+        if (user_demandeur != null && user_recepteur != null && user_demandeur.equals(user_recepteur)) {
             throw new IllegalStateException("Un utilisateur ne peut pas créer une amitié avec lui-même.");
         }
     }
@@ -96,7 +98,7 @@ public class Amitie {
      *
      * @param since Nouvelle date de creation de l'amitie
      */
-    public void getDateCreation(LocalDateTime since) {
+    public void setDateCreation(LocalDateTime since) {
         this.since = since;
     }
 
