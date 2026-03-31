@@ -7,25 +7,35 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 
 @Entity
+@Table(name = "profils")
 public class Profil {
     // Attributs de l'entité Profil
 
+    // L'identifiant unique du profil
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // L'identifiant unique du profil
     private Long id;
+
     // Biographie de l'utilisateur
+    @Column(length = 500)
     private String biographie;
+
     // URL de l'image de profil de l'utilisateur
+    @Column(name = "image_url")
     private String imageUrl;
+
     // Point de réputation de l'utilisateur
-    private int experiencePoints;
+    @Column(name = "experience_points", nullable = false)
+    private int experiencePoints = 0;
+
     // Niveau de l'utilisateur basé sur les points de réputation
-    private int niveau;
+    @Column(nullable = false)
+    private int niveau = 1;
 
     // Relations avec d'autres entités
     // Relation OneToOne avec l'entité Utilisateur
     @OneToOne
+    @JoinColumn(name = "utilisateur_id", nullable = false, unique = true)
     private Utilisateur utilisateur;
 
     // Constructeurs

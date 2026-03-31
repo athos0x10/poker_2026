@@ -1,41 +1,59 @@
 package com.projet.poker.model.persist;
 
 import java.util.List;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.*;
 
 @Entity
+@Table(name = "utilisateurs")
 public class Utilisateur {
     // Attributs de l'entité Utilisateur
 
+    // L'identifiant unique de l'utilisateur
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // L'identifiant unique de l'utilisateur
     private Long id;
+
     // Le login de l'utilisateur
+    @NotBlank(message = "Le login est obligatoire")
+    @Size(min = 3, max = 20, message = "Le login doit faire entre 3 et 20 caractères")
+    @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "Le login contient des caractères non autorisés")
+    @Column(nullable = false, unique = true, length = 20)
     private String login;
+
     // Le mot de passe haché de l'utilisateur
+    @NotBlank
+    @Column(nullable = false)
     private String passwordHash;
+
     // L'adresse e-mail de l'utilisateur
+    @NotBlank(message = "L'email est obligatoire")
+    @Email(message = "Format de l'email invalide")
+    @Column(nullable = false, unique = true)
     private String email;
+
     // Date de création du compte utilisateur
+    @Column(nullable = false, updatable = false)
     private LocalDateTime dateCreation;
 
     // Relations avec d'autres entités
     // Relation OneToOne avec l'entité Profil
-    @OneToOne(mappedBy = "utilisateur")
+    @OneToOne(mappedBy = "utilisateur", cascade = CascadeType.ALL)
     private Profil profil;
+
     // Relation OneToOne avec l'entité Portefeuille
-    @OneToOne(mappedBy = "utilisateur")
+    @OneToOne(mappedBy = "utilisateur", cascade = CascadeType.ALL)
     private Portefeuille portefeuille;
+
     // Relation OneToMany avec l'entité Amitie
-    @OneToMany(mappedBy = "utilisateur")
-    private List<Amitie> amities;
+    // La relation est séparé en deux listes (demandeur/receveur)
+    @OneToMany(mappedBy = "demandeur")
+    private List<Amitie> demandesEnvoyees;
+
+    @OneToMany(mappedBy = "receveur")
+    private List<Amitie> demandesRecues;
+
     // Relation OneToMany avec l'entité SessionJoueur
     @OneToMany(mappedBy = "utilisateur")
     private List<SessionJoueur> sessionsJoueur;
@@ -194,21 +212,39 @@ public class Utilisateur {
     }
 
     /**
-     * Getter pour la liste des amitiés de l'utilisateur
+     * Getter pour la liste des amitiés envoyées de l'utilisateur
      *
-     * @return La liste des amitiés de l'utilisateur
+     * @return La liste des amitiés envoyées de l'utilisateur
      */
-    public List<Amitie> getAmities() {
-        return amities;
+    public List<Amitie> getAmitiesEnvoyees() {
+        return this.demandesEnvoyees;
     }
 
     /**
-     * Setter pour la liste des amitiés de l'utilisateur
+     * Setter pour la liste des amitiés envoyées de l'utilisateur
      *
-     * @param amities La liste des amitiés de l'utilisateur à définir
+     * @param amities La liste des amitiés envoyées de l'utilisateur à définir
      */
-    public void setAmities(List<Amitie> amities) {
-        this.amities = amities;
+    public void setAmitiesEnvoyees(List<Amitie> amities) {
+        this.demandesEnvoyees = amities;
+    }
+
+    /**
+     * Getter pour la liste des amitiés reçues de l'utilisateur
+     *
+     * @return La liste des amitiés reçues de l'utilisateur
+     */
+    public List<Amitie> getAmitiesRecues() {
+        return this.demandesRecues;
+    }
+
+    /**
+     * Setter pour la liste des amitiés reçues de l'utilisateur
+     *
+     * @param amities La liste des amitiés reçues de l'utilisateur à définir
+     */
+    public void setAmitiesRecues(List<Amitie> amities) {
+        this.demandesRecues = amities;
     }
 
     /**
@@ -239,5 +275,30 @@ public class Utilisateur {
      */
     boolean authentifier(String pswHash) {
         return this.passwordHash.equals(pswHash);
+    }
+
+    /**
+     * Récupère les amis de l'utilisateur. On considère qu'un ami est un
+     * FriendStatus Accepted
+     *
+     * @return la liste des amis de l'utilisateur
+     */
+    public List<Utilisateur> getAmis() {
+        List<Utilisateur> amis = new ArrayList<>();
+
+        // On ajoute ceux à qui on a envoyé une demande qui a été acceptée
+        for (Amitie a : demandesEnvoyees) {
+            if (a.getStatus() == FriendStatus.ACCEPTED) {
+                amis.add(a.getReceveur());
+            }
+        }
+
+        // On ajoute ceux qui nous ont envoyé une demande qu'on a acceptée
+        for (Amitie a : demandesRecues) {
+            if (a.getStatus() == FriendStatus.ACCEPTED) {
+                amis.add(a.getDemandeur());
+            }
+        }
+        return amis;
     }
 }

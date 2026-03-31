@@ -1,18 +1,32 @@
+package com.projet.poker.model.persist;
+
+import java.util.List;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "portefeuilles")
 public class Portefeuille {
     // Attributs de l'entité Portefeuille
 
+    // L'identifiant unique du portefeuille
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // L'identifiant unique du portefeuille
     private Long id;
+
     // Solde d'argent réel dans le portefeuille
+    @Column(nullable = false, precision = 15, scale = 2)
     private double globalBalance;
 
     // Relations avec d'autres entités
     // Relation OneToOne avec l'entité Utilisateur
     @OneToOne
+    @JoinColumn(name = "utilisateur_id", nullable = false, unique = true)
     private Utilisateur utilisateur;
 
     // Constructeurs
