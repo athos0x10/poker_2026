@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Random;
 
 public class Deck {
+    /* Le deck est l'ensemble des cartes utilisables dans le jeu */
+
     private List<Card> cards;
     private Random rand;
 
@@ -13,11 +15,14 @@ public class Deck {
         this.rand = new Random();
     }
 
+    /*
+     * Crée un deck standard de 52 cartes
+     */
     private List<Card> createStandardDeck() {
         List<Card> deck = new ArrayList<>();
 
-        for (Value v : Value.values()) {
-            for (Color c : Color.values()) {
+        for (CardValue v : CardValue.values()) {
+            for (CardColor c : CardColor.values()) {
                 deck.add(new Card(v, c));
             }
         }
@@ -25,6 +30,10 @@ public class Deck {
         return deck;
     }
 
+    /*
+     * Mélange les cartes du deck
+     * Algorithme de Fisher-Yates
+     */
     public void shuffle() {
         int n = cards.size();
         int j;
@@ -37,14 +46,23 @@ public class Deck {
         }
     }
 
-    public Card popCard() {
-        return cards.removeFirst();
+    /*
+     * Retire et retourne la première carte du deck
+     */
+    public Card drawCard() {
+        return cards.remove(0);
     }
 
+    /*
+     * Retourne la liste des cartes du deck
+     */
     public List<Card> getCards() {
         return cards;
     }
 
+    /*
+     * Définit les cartes du deck
+     */
     public void setCards(List<Card> crds) {
         this.cards = crds;
     }

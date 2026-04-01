@@ -1,6 +1,10 @@
 package main.java.com.projet.poker.engine;
 
-public enum Color {
+public enum CardColor {
+    /*
+     * Les couleurs des cartes
+     */
+
     PIQUE("♠"),
     TREFLE("♣"),
     COEUR("♥"),
@@ -8,7 +12,7 @@ public enum Color {
 
     private final String symbol;
     
-    private Color(String symbol) {
+    private CardColor(String symbol) {
         this.symbol = symbol;
     }
 

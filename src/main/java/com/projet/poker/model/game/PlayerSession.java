@@ -5,29 +5,35 @@ import java.util.List;
 
 import main.java.com.projet.poker.engine.Card;
 
-public class SessionJoueur {
+public class PlayerSession {
     
     private long id;
-    private long talbleId;
+    private long tableId;
     private long userId;
     private double currentStack;
     private int seatNumber;
-    private List<Card> handCards;
+    private List<Card> holeCards;
     private boolean hasFolded;
     private boolean isAllIn;
 
-    public SessionJoueur(long userId) {
+    public PlayerSession(long userId) {
         this.userId = userId;
+        this.holeCards = new ArrayList<>();
+
     }
 
-    public SessionJoueur(long id, long talbleId, long userId, double currentStack, int seatNumber) {
+    public PlayerSession(long id, long talbleId, long userId, double currentStack, int seatNumber) {
         this.id = id;
-        this.talbleId = talbleId;
+        this.tableId = talbleId;
         this.userId = userId;
         this.currentStack = currentStack;
         this.seatNumber = seatNumber;
         this.hasFolded = false;
         this.isAllIn = false;
-        this.handCards = new ArrayList<>();
+        this.holeCards = new ArrayList<>();
+    }
+
+    public List<Card> getHoleCards() {
+        return holeCards;
     }
 }

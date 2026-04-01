@@ -1,28 +1,31 @@
 package main.java.com.projet.poker.engine;
 
 public class Card {
+    /*
+     * Représentation d'une carte (valeur + couleur)
+     */
 
-    private Value value;
-    private Color color;
+    private CardValue value;
+    private CardColor color;
 
-    public Card(Value v, Color c) {
+    public Card(CardValue v, CardColor c) {
         this.value = v;
         this.color = c;
     }
 
-    public Value getValue() {
+    public CardValue getCardValue() {
         return value;
     }
 
-    public Color getColor() {
+    public CardColor getCardColor() {
         return color;
     }
 
-    public void setColor(Color color) {
+    public void setColor(CardColor color) {
         this.color = color;
     }
 
-    public void setValue(Value value) {
+    public void setValue(CardValue value) {
         this.value = value;
     }
 
