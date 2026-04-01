@@ -33,4 +33,11 @@ public class Card {
     public String toString() {
         return value.toString() + color.toString();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        Card other = (Card) obj;
+        return value.equals(other.getCardValue())
+                && color.equals(other.getCardColor());
+    }
 }

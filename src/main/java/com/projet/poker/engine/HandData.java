@@ -6,15 +6,15 @@ import java.util.List;
 public class HandData {
     
     private HandType type;
-    private HashMap<CardValue, Integer> cardValues;
-    private HashMap<CardColor, Integer> cardColors;
+    private HashMap<CardValue, Integer> countCardValues;
+    private HashMap<CardColor, Integer> countCardColors;
     private List<Card> sortedCards;
 
     public HandData(HashMap<CardValue, Integer> cardValues,
                 HashMap<CardColor, Integer> cardColors,
                 List<Card> sortedCards) {
-        this.cardValues = cardValues;
-        this.cardColors = cardColors;
+        this.countCardValues = cardValues;
+        this.countCardColors = cardColors;
         this.sortedCards = sortedCards;
         type = HandType.CARTE_HAUTE;
     }
@@ -23,12 +23,12 @@ public class HandData {
         return type;
     }
 
-    public HashMap<CardColor, Integer> getCardColors() {
-        return cardColors;
+    public HashMap<CardColor, Integer> getCountCardColors() {
+        return countCardColors;
     }
 
-    public HashMap<CardValue, Integer> getCardValues() {
-        return cardValues;
+    public HashMap<CardValue, Integer> getCountCardValues() {
+        return countCardValues;
     }
 
     public List<Card> getSortedCards() {

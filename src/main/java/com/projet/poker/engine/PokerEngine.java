@@ -3,7 +3,10 @@ package main.java.com.projet.poker.engine;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import main.java.com.projet.poker.model.game.PlayerSession;
 import main.java.com.projet.poker.model.game.Table;
@@ -16,6 +19,15 @@ public class PokerEngine {
      */
 
     public PokerEngine() {}
+
+    public CardValue getKeyByValue(Map<CardValue, Integer> map, Integer value) {
+        for (Map.Entry<CardValue, Integer> entry : map.entrySet()) {
+            if (Objects.equals(value, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
 
     public void distribute(Table table, Deck deck) {
         for (PlayerSession player: table.getActivePlayers()) {
@@ -55,42 +67,74 @@ public class PokerEngine {
         return map;
     }
 
-    public boolean isQuinteFlush(HandData hand) {
-        return false;
-    }
-
     public boolean isCarre(HandData hand) {
-        return false;
+        return hand.getCountCardValues().containsValue(4);
     }
 
     public boolean isFull(HandData hand) {
-        return false;
+        HashMap<CardValue, Integer> map = hand.getCountCardValues();
+        
+        return Collections.frequency(map.values(), 3) == 2
+            || (map.containsValue(3) && map.containsValue(2));
     }
 
-    public boolean isFlush(HandData hand) {
-        return false;
+    public boolean testFirstQuinte(List<Card> cards) {
+        return cards.getLast().getCardValue().equals(CardValue.AS)
+            && cards.getFirst().getCardValue().equals(CardValue.DEUX)
+            && cards.getFirst().getCardValue().equals(CardValue.TROIS)
+            && cards.getFirst().getCardValue().equals(CardValue.QUATRE)
+            && cards.getFirst().getCardValue().equals(CardValue.CINQ);
     }
 
     public boolean isQuinte(HandData hand) {
-        return false;
+        
+        // Enlever les doublons
+        LinkedHashSet<Card> set = new LinkedHashSet<>(hand.getSortedCards());
+        List<Card> cards = new ArrayList<>();
+        cards.addAll(set);
+
+        int count = 0;
+
+        for (int i = 0; i < cards.size() - 1; i++) {
+            if (cards.get(i).getCardValue().getValue() == 
+                (cards.get(i + 1).getCardValue().getValue() + 1)) {
+                 count++;   
+            } else {
+                count = 0;
+            }
+        }
+
+        if (count >= 5) {
+            return true;
+        } else {
+            return testFirstQuinte(cards);
+        }
     }
 
     public boolean isBrelan(HandData hand) {
-        return false;
+        return hand.getCountCardValues().containsValue(3);
     }
 
     public boolean isDoublePaire(HandData hand) {
-        return false;
-    }
-
-    public boolean isPaire(HandData hand) {
-        return false;
-    }
-
-    public boolean isCarteHaute(HandData hand) {
-        return false;
+        return Collections.frequency(
+            hand.getCountCardValues().values(), 2
+        ) >= 2;
     }
     
+    public boolean isPaire(HandData hand) {
+        return Collections.frequency(
+            hand.getCountCardValues().values(), 2
+        ) == 1;    
+    }
+
+    public boolean isFlush(HandData hand) {
+        return hand.getCountCardColors().containsValue(5);
+    }
+    
+    public boolean isQuinteFlush(HandData hand) {
+        return isQuinte(hand) && isFlush(hand);
+    }
+
     public void evaluateHand(HandData hand) {
         if (isQuinteFlush(hand)){ hand.setType(HandType.QUINTE_FLUSH); return; }
         if (isCarre(hand)){ hand.setType(HandType.CARRE); return; }
@@ -100,10 +144,12 @@ public class PokerEngine {
         if (isBrelan(hand)){ hand.setType(HandType.BRELAN); return; }
         if (isDoublePaire(hand)){ hand.setType(HandType.DOUBLE_PAIRE); return; }
         if (isPaire(hand)){ hand.setType(HandType.PAIRE); return; }
-        if (isCarteHaute(hand)){ hand.setType(HandType.CARTE_HAUTE); return; }
+        
+        hand.setType(HandType.CARTE_HAUTE); 
+        return;
     }
 
-    public int evaluateSinglePlayer(PlayerSession player, List<Card> community) {
+    public HandData evaluateSinglePlayer(PlayerSession player, List<Card> community) {
         List<Card> sortedCards = sortCards(player, community);
         HashMap<CardValue, Integer> cardValues = countCardValues(sortedCards);
         HashMap<CardColor, Integer> cardColors = countCardColors(sortedCards);
@@ -111,7 +157,40 @@ public class PokerEngine {
         HandData hand = new HandData(cardValues, cardColors, sortedCards);
         evaluateHand(hand);
         
+        return hand;
+    }
+
+    public int compareTieBreak(HandData h1, HandData h2) {
+        List<Card> h1List = h1.getSortedCards();
+        List<Card> h2List = h2.getSortedCards();
+
+        // A corriger: prendre en compte le kicker, ...
+        for (int i = 0; i < h1List.size(); i++) {
+            int v1 = h1List.get(i).getCardValue().getValue();
+            int v2 = h2List.get(i).getCardValue().getValue();
+
+            if (v1 < v2) {
+                return -1;
+            } else if (v1 > v2) {
+                return 1;
+            } else {
+                continue;
+            }
+        }
+
         return 0;
+    }
+
+    public int compareHands(HandData h1, HandData h2) {
+        int h1Score = h1.getType().getScore();
+        int h2Score = h2.getType().getScore();
+        if (h1Score < h2Score) {
+            return -1;
+        } else if (h1Score > h2Score) {
+            return 1;
+        } else {
+            return compareTieBreak(h1, h2);
+        }
     }
 
     public static void main(String[] args) {
@@ -127,5 +206,4 @@ public class PokerEngine {
         engine.distribute(t, deck);
         t.showPlayerHands();
     }
-    
 }
