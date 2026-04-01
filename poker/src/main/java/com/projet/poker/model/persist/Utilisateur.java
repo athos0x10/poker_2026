@@ -1,10 +1,24 @@
 package com.projet.poker.model.persist;
 
-import jakarta.persistence.*;
-import jakarta.persistence.Column;
-import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+
+import com.projet.poker.model.game.SessionJoueur;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "utilisateurs")
@@ -257,14 +271,14 @@ public class Utilisateur {
     // On ajoute ceux à qui on a envoyé une demande qui a été acceptée
     for (Amitie a : demandesEnvoyees) {
       if (a.getStatus() == FriendStatus.ACCEPTED) {
-        amis.add(a.getReceveur());
+        amis.add(a.getUserDemandeur());
       }
     }
 
     // On ajoute ceux qui nous ont envoyé une demande qu'on a acceptée
     for (Amitie a : demandesRecues) {
       if (a.getStatus() == FriendStatus.ACCEPTED) {
-        amis.add(a.getDemandeur());
+        amis.add(a.getUserDemandeur());
       }
     }
     return amis;
