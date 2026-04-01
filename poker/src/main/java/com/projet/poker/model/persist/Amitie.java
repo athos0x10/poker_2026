@@ -1,7 +1,8 @@
 package com.projet.poker.model.persist;
 
 import jakarta.persistence.*;
-import jakarta.persistence.EnumType;
+import lombok.ToString;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,11 +30,13 @@ public class Amitie {
     // Relation ManyToOne avec l'entité Utilisateur demandeuse
     @ManyToOne
     @JoinColumn(name = "user_demandeur")
-    private Utilisateur user_demandeur;
+    @ToString.Exclude
+    private Utilisateur demandeur;
     // Relation ManyToOne avec l'entité Utilisateur receptrice 
     @ManyToOne
     @JoinColumn(name = "user_recepteur")
-    private Utilisateur user_recepteur;
+    @ToString.Exclude
+    private Utilisateur receveur;
 
     // Constructeurs
     /**
@@ -55,17 +58,29 @@ public class Amitie {
     public Amitie(Utilisateur user_demandeur, Utilisateur user_recepteur, FriendStatus status, LocalDateTime since) {
         this.status = status;
         this.since = since;
-        this.user_demandeur = user_demandeur;
-        this.user_recepteur = user_recepteur;
+        this.demandeur = user_demandeur;
+        this.receveur = user_recepteur;
         validerNonAutoAmitie();
     }
 
     // verification que l'amitie est possible 
     @PrePersist
     @PreUpdate
+    public void handlePrePersist() {
+        // 1. On met la date
+        if (this.since == null) {
+            this.since = LocalDateTime.now();
+        }
+
+        // 2. On appelle la validation qui manquait
+        validerNonAutoAmitie();
+    }
+
     private void validerNonAutoAmitie() {
-        if (user_demandeur != null && user_recepteur != null && user_demandeur.equals(user_recepteur)) {
-            throw new IllegalStateException("Un utilisateur ne peut pas créer une amitié avec lui-même.");
+        if (this.demandeur != null && this.receveur != null) {
+            if (this.demandeur.getId().equals(this.receveur.getId())) {
+                throw new IllegalStateException("Un utilisateur ne peut pas s'ajouter lui-même en ami.");
+            }
         }
     }
 
@@ -124,15 +139,33 @@ public class Amitie {
     /**
      * Obtient l'utilisateur demandeur associé à cette amitie
      */
-    public Utilisateur getUserDemandeur() {
-        return user_demandeur;
+    public Utilisateur getDemandeur() {
+        return demandeur;
     }
 
     /**
      * Obtient l'utilisateur recepteur associé à cette amitie
      */
-    public Utilisateur getUserRecepteur() {
-        return user_recepteur;
+    public Utilisateur getReceveur() {
+        return receveur;
+    }
+
+    /**
+     * Définit l'utilisateur demandeur de cette amitie
+     *
+     * @param demandeur L'utilisateur qui fait la demande d'amitié
+     */
+    public void setDemandeur(Utilisateur demandeur) {
+        this.demandeur = demandeur;
+    }
+
+    /**
+     * Définit l'utilisateur recepteur de cette amitie
+     *
+     * @param receveur L'utilisateur qui reçoit la demande d'amitié
+     */
+    public void setReceveur(Utilisateur receveur) {
+        this.receveur = receveur;
     }
 
 }

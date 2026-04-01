@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.ToString;
 
 @Entity
 @Table(name = "profils")
@@ -34,6 +35,7 @@ public class Profil {
   // Relation OneToOne avec l'entité Utilisateur
   @OneToOne
   @JoinColumn(name = "utilisateur_id", nullable = false, unique = true)
+  @ToString.Exclude
   private Utilisateur utilisateur;
 
   // Constructeurs
