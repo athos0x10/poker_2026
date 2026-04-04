@@ -18,15 +18,50 @@ public class PokerEngine {
      * les tours de mise, la distribution des cartes, etc.
      */
 
+    private static final int MAX_HAND = 5;
+
     public PokerEngine() {}
 
-    public CardValue getKeyByValue(Map<CardValue, Integer> map, Integer value) {
-        for (Map.Entry<CardValue, Integer> entry : map.entrySet()) {
+    public Card getKeyByValue(HandData hand, Integer value) {
+        int i = 0;
+        
+        for (Map.Entry<CardValue, Integer> entry : hand.getCountCardValues().entrySet()) {
             if (Objects.equals(value, entry.getValue())) {
-                return entry.getKey();
+                return hand.getSortedCards().get(i);
             }
+            i++;
         }
         return null;
+    }
+
+    // A corriger: n'ajoute pas les 3 cartes
+    public List<Card> getKeysByValue(HandData hand, Integer value, int max) {
+        int i = 0, n = 0;
+        List<Card> keys = new ArrayList<>();
+        for (Map.Entry<CardValue, Integer> entry : hand.getCountCardValues().entrySet()) {
+            if (Objects.equals(value, entry.getValue()) && n < max) {
+                keys.add(hand.getSortedCards().get(i));
+                n++;
+            }
+            i++;
+        }
+        return keys;
+    }
+
+    public void updateBestWithKickers(List<Card> currentBest, List<Card> ordered) {
+        int numberOfKickers = MAX_HAND - currentBest.size();
+        if (numberOfKickers == 0) return;
+
+        List<Card> temp = new ArrayList<>();
+
+        for (int i = 0; i < ordered.size() && (temp.size() < numberOfKickers); i++) {
+            Card currentOrdered = ordered.get(i);
+            if (!currentBest.contains(currentOrdered)) {
+                temp.add(currentOrdered);
+            }
+        }
+
+        currentBest.addAll(temp);
     }
 
     public void distribute(Table table, Deck deck) {
@@ -67,27 +102,39 @@ public class PokerEngine {
         return map;
     }
 
-    public boolean isCarre(HandData hand) {
-        return hand.getCountCardValues().containsValue(4);
+    public List<Card> isCarre(HandData hand) {
+        List<Card> best = getKeysByValue(hand, 4, MAX_HAND);
+
+        if (best.size() > 0) {
+            updateBestWithKickers(best, hand.getSortedCards());
+            return best;
+        } else {
+            return null;
+        }
     }
 
-    public boolean isFull(HandData hand) {
-        HashMap<CardValue, Integer> map = hand.getCountCardValues();
+    public List<Card> isFull(HandData hand) {
+        List<Card> best = getKeysByValue(hand, 3, MAX_HAND);
+        if (best.size() < MAX_HAND) best.addAll(getKeysByValue(hand, 2, MAX_HAND - best.size()));
         
-        return Collections.frequency(map.values(), 3) == 2
-            || (map.containsValue(3) && map.containsValue(2));
+        if (best.size() == MAX_HAND) {
+            return best;
+        } else {
+            return null;
+        }
+        // return (Collections.frequency(map.values(), 3) == 2)
+        //     || (map.containsValue(3) && map.containsValue(2));
     }
 
     public boolean testFirstQuinte(List<Card> cards) {
         return cards.getLast().getCardValue().equals(CardValue.AS)
             && cards.getFirst().getCardValue().equals(CardValue.DEUX)
-            && cards.getFirst().getCardValue().equals(CardValue.TROIS)
-            && cards.getFirst().getCardValue().equals(CardValue.QUATRE)
-            && cards.getFirst().getCardValue().equals(CardValue.CINQ);
+            && cards.get(1).getCardValue().equals(CardValue.TROIS)
+            && cards.get(2).getCardValue().equals(CardValue.QUATRE)
+            && cards.get(3).getCardValue().equals(CardValue.CINQ);
     }
 
-    public boolean isQuinte(HandData hand) {
-        
+    public List<Card> isQuinte(HandData hand) {
         // Enlever les doublons
         LinkedHashSet<Card> set = new LinkedHashSet<>(hand.getSortedCards());
         List<Card> cards = new ArrayList<>();
@@ -105,7 +152,7 @@ public class PokerEngine {
         }
 
         if (count >= 5) {
-            return true;
+            return best;
         } else {
             return testFirstQuinte(cards);
         }
