@@ -8,15 +8,19 @@ import main.java.com.projet.poker.engine.Card;
 import main.java.com.projet.poker.engine.Deck;
 
 public class GameHand {
+    /* Classe représentant une manche / partie de poker 
+     * (au début de laquelle on redistribue les cartes, et à la fin de laquelle on détermine le gagnant)
+     */
     
     private Long id;
     private Long tableId;
     private double potAmount;
     private Deck deck;
     private List<Card> communityCards;
-    Date startTime;
-    int currentTurnIndex;
-    PlayerSession dealerButton;
+    private Date startTime;
+    private int currentTurnIndex;
+    private PlayerSession dealerButton;
+    private double highestBet;
 
     public GameHand() {
         this.deck = new Deck();
@@ -32,6 +36,46 @@ public class GameHand {
         this.startTime = new Date(System.currentTimeMillis());
         this.currentTurnIndex = 0;
         this.dealerButton = dealerButton;
+    }
+
+    public void shuffleDeck() {
+        deck.shuffle();
+    }
+
+    public List<Card> drawCardsFromDeck(int n) {
+        return deck.drawCards(n);
+    }
+
+    public void setPotAmount(double potAmount) {
+        this.potAmount = potAmount;
+    }
+
+    public void setCurrentTurnIndex(int currentTurnIndex) {
+        this.currentTurnIndex = currentTurnIndex;
+    }
+
+    public void setHighestBet(double highestBet) {
+        this.highestBet = highestBet;
+    }
+
+    public void addToPot(double amount) {
+        potAmount += amount;
+    }
+
+    public int getCurrentTurnIndex() {
+        return currentTurnIndex;
+    }
+
+    public PlayerSession getDealerButton() {
+        return dealerButton;
+    }
+
+    public double getHighestBet() {
+        return highestBet;
+    }
+
+    public double getPotAmount() {
+        return potAmount;
     }
 
     public Deck getDeck() {

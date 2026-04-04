@@ -46,17 +46,11 @@ public class Deck {
         }
     }
 
-    /*
-     * Retire et retourne la première carte du deck
-     */
-    public Card drawCard() {
-        return cards.remove(0);
-    }
-
     /* Retire et retourne les n premières cartes du deck */
     public List<Card> drawCards(int n) {
         List<Card> cardsToDraw = new ArrayList<>(cards.subList(0, n));
         cards.removeAll(cardsToDraw);
+        
         return cardsToDraw;
     }
 

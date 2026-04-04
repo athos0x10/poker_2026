@@ -31,7 +31,7 @@ public class Card {
 
     @Override
     public String toString() {
-        return value.toString() + "," + color.toString();
+        return "{"+ value.toString() + "," + color.toString() + "}";
     }
 
     @Override

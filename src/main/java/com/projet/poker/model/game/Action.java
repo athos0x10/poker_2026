@@ -21,5 +21,20 @@ public class Action {
         this.amount = amount;
         this.timestamp = new Date(System.currentTimeMillis());
     }
-    
+
+    public ActionType getActionType() {
+        return actionType;
+    }
+
+    public Long getPlayerId() {
+        return playerId;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public Long getId() {
+        return id;
+    }
 }

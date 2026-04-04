@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import main.java.com.projet.poker.model.game.Action;
+import main.java.com.projet.poker.model.game.GameHand;
 import main.java.com.projet.poker.model.game.PlayerSession;
 import main.java.com.projet.poker.model.game.Table;
 
@@ -25,14 +27,10 @@ public class PokerEngine {
     public PokerEngine() {}
 
 
-    /* Distribue des cartes à tous les joueurs
-    */
-    public void distribute(Table table, Deck deck) {
-        for (PlayerSession player: table.getActivePlayers()) {
-            player.getHoleCards().add(deck.drawCard());
-            player.getHoleCards().add(deck.drawCard());
-        }
-    }
+
+    /*=====================================================================================
+     *=================================== EVALUATION ======================================
+     ====================================================================================== */
 
     /* Trie les cartes cummulées d'un joueur et de la table
      */
@@ -47,6 +45,7 @@ public class PokerEngine {
         return allCards;
     }
 
+
     /* Renvoie une map avec pour chaque valeur de carte, son nombre d'occurences
     */
     public HashMap<CardValue, Integer> countCardValues(List<Card> cards) {
@@ -59,6 +58,7 @@ public class PokerEngine {
         return map;
     }
 
+
     /* Renvoie une map avec pour chaque couleur de carte, son nombre d'occurences
     */
     public HashMap<CardColor, Integer> countCardColors(List<Card> cards) {
@@ -70,6 +70,7 @@ public class PokerEngine {
 
         return map;
     }
+
 
     /* Renvoie la liste des clés qui apparaissent 'targetCount' fois (une clé par valeur)
      * Cela permet de trouver la combinaison (en couleur ou valeur)
@@ -93,6 +94,7 @@ public class PokerEngine {
         return matchingKeys;
     }
 
+
     /* Renvoie toutes les cartes dont la clé fait partie de 'targetValues' (valeur ou couleur)
      * Cela permet de renvoyer toutes les cartes de la combinaison
      * Ex: pour un full (contraite sur les valeurs) dont le résultat de findValuesWithCount est {13, 10},
@@ -113,6 +115,7 @@ public class PokerEngine {
         return extracted;
     }
 
+
     /* Complète la combinaison avec les meilleurs cartes de façon à toujours avoir 5 cartes dans la combinaison,
      * et pourvoir ainsi départager les égalités.
     */
@@ -132,6 +135,7 @@ public class PokerEngine {
         currentBest.addAll(temp);
     }
 
+
     /* Une combinaison est un carré si elle possède 4 cartes de la même valeur */
     public List<Card> findCarre(HandData hand) {
         // renvoie toutes les occurences de 4 (il ne peut en avoir qu'une seule ou 0)
@@ -146,6 +150,7 @@ public class PokerEngine {
 
         return null;
     }
+
 
     /* Une combinaison est un full si elle possède 2 fois 3 cartes identiques,
      * Ou bien une fois 3 cartes et une fois 2 cartes identiques.
@@ -164,6 +169,7 @@ public class PokerEngine {
         return best.size() == MAX_HAND ? best : null;
     }
 
+
     /* Combinaison particulière AS,2,3,4,5
     */
     public boolean findFirstQuinte(List<Card> cards) {
@@ -173,6 +179,7 @@ public class PokerEngine {
             && cards.get(cards.size() - 3).getCardValue().equals(CardValue.QUATRE)
             && cards.get(cards.size() - 4).getCardValue().equals(CardValue.CINQ);
     }
+
 
     /* Une combinaison est une quinte si 5 cartes se suivent, y compris
      *  10,VALET,DAME,ROI,AS (naturelle) ou AS,2,3,4,5 (cas particulier testFirstQuinte)
@@ -212,6 +219,7 @@ public class PokerEngine {
         return null;
     }
 
+
     /* Une combinaison est un brelan si elle contient 3 cartes de même valeur
      * (puisque le full est testé AVANT)
      */
@@ -228,6 +236,7 @@ public class PokerEngine {
 
         return null;
     }
+
 
     /* Une combinaison est une paire double si elle possède aux moins deux paires
     */
@@ -246,6 +255,7 @@ public class PokerEngine {
         return null;
     }
     
+
     /* Une combinaison est une paire si elle possède deux cartes seulement avec la même valeur
      * (la double paire est traitée avant)
      */
@@ -261,6 +271,7 @@ public class PokerEngine {
         return null;
     }
 
+
     /* Une combinaison est un flush si elle possède 5 cartes de la même couleur
      * (n'importe lesquelles)
     */
@@ -274,6 +285,7 @@ public class PokerEngine {
         return null;
     }
     
+
     /* Une combinaison est une quinte flush si c'est une quinte (les 5 cartes se suivent)
      * ET que CES 5 cartes sont toutes de la même couleur (pas seulement 5 cartes de la main)
      */
@@ -291,6 +303,7 @@ public class PokerEngine {
 
         return quinteCards;
     }
+
 
     /* Evalue une main en positionannt le type de combinaison (ex: QUINTE_FLUSH)
      * et en donnant les meilleurs 5 cartes (pour les égalités et l'évaluation du score)
@@ -333,6 +346,7 @@ public class PokerEngine {
         return;
     }
 
+
     /* Evalue la main d'un seul joueur en fonction des cartes présentes sur la table
      */
     public HandData evaluateSinglePlayer(PlayerSession player, List<Card> community) {
@@ -345,6 +359,7 @@ public class PokerEngine {
         
         return hand;
     }
+
 
     /* Compare les valeurs des cartes en cas d'égalité
      */
@@ -368,6 +383,7 @@ public class PokerEngine {
         return 0;
     }
 
+
     /* Compare les mains de deux joueurs,
      * en regardant d'abord la combinaison puis les valeurs des cartes
     */
@@ -382,6 +398,7 @@ public class PokerEngine {
             return compareTieBreak(h1, h2);
         }
     }
+
 
     List<PlayerSession> determineWinners(List<PlayerSession> players, List<Card> communityCards) {
         if (players == null || players.isEmpty()) return null;
@@ -419,25 +436,269 @@ public class PokerEngine {
         return winners;
     }
 
-    public static void main(String[] args) {
-        Table t = new Table();
-        PokerEngine engine = new PokerEngine();
-        Deck deck = t.getHand().getDeck();
 
-        for (int i = 0; i < 5; i++) {
-            t.addPlayer(new PlayerSession(i));
+
+    /*=====================================================================================
+     *================================= TOURS ET MISES ====================================
+     ====================================================================================== */
+
+
+    /* Distribue des cartes à tous les joueurs
+    */
+    private void distribute(Table table) {
+        for (PlayerSession player: table.getActivePlayers()) {
+            player.getHoleCards().addAll(table.getGameHand().drawCardsFromDeck(2));
+        }
+    }
+
+    /* Récupère l'indice du prochain joueur en tournant dans le sens des aiguilles
+     * d'une montre (prochain à gauche).
+     * Ce n'est n'est pas le joueur qui débutera le tour, c'est celui
+     * directement à gauche de 'index'
+     */
+    private int getNextPlayerIdx(int index, int size) {
+        return (index + 1) % size;
+    }
+
+    /* Récupère l'indice du prochain joueur qui commencera le tour
+     * (il ne doit pas s'être couché)
+    */
+    private int findNextPlayer(Table table) {
+        GameHand gameHand = table.getGameHand();
+        List<PlayerSession> players = table.getActivePlayers();
+
+        int dealerIdx = table.getActivePlayers().indexOf(gameHand.getDealerButton());
+        int nextIdx = (dealerIdx + 1) % table.getActivePlayers().size();
+
+        while (players.get(nextIdx).hasFolded()) {
+            nextIdx = (nextIdx + 1) % players.size();
         }
 
-        deck.shuffle();
-        engine.distribute(t, deck);
+        return nextIdx;
+    }
 
-        List<Card> tableHand = deck.drawCards(5);
-        t.getGameHand().setCommunityCards(tableHand);
 
-        List<PlayerSession> winners = engine.determineWinners(t.getActivePlayers(), tableHand);
+    /* Met à jour la table si le round (PRE-FLOP, ...) est fini
+     * (voir processAction)
+    */
+    private void updateGameState(Table table) {
+        GameHand gameHand = table.getGameHand();
+
+        for (PlayerSession player : table.getActivePlayers()) {
+            player.resetBet();
+        }
+
+        gameHand.setHighestBet(0);
+        gameHand.setCurrentTurnIndex(findNextPlayer(table));
+    }
+
+
+    /* Au début d'une partie, récolte les blindes,
+     * met à jour les bet des joueurs et le pot global, etc.
+     */
+    private void collectBlinds(Table table) {
+        GameHand gameHand = table.getGameHand();
+        List<PlayerSession> activePlayers = table.getActivePlayers();
+
+        // Récupère les index du Dealer, Petite blinde et Grosse blinde
+        int dealerIdx = activePlayers.indexOf(gameHand.getDealerButton());
+        int smallBlindIdx = (dealerIdx + 1) % activePlayers.size();
+        int bigBlindIdx = (smallBlindIdx + 1) % activePlayers.size();
+
+        // Récupère les joueurs
+        PlayerSession sbPlayer = activePlayers.get(smallBlindIdx);
+        PlayerSession bbPlayer = activePlayers.get(bigBlindIdx);
+
+        // Définit les montants
+        double smallBlind = table.getMinBet() / 2;
+        double bigBlind = table.getMinBet();
+
+        // Retire les mises
+        sbPlayer.bet(smallBlind);
+        bbPlayer.bet(bigBlind);
+
+        // Ajoute les mises au pot
+        gameHand.addToPot(smallBlind + bigBlind);
+        gameHand.setHighestBet(bigBlind);
+    }
+
+
+    /* Débute une nouvelle partie:
+    * distribution des cartes, collecte de la blind, désignation du dealer, etc.
+    */
+    public void startNewHand(Table table) {
+        // Changer le GameState de la table en PRE_FLOP.
+        if (!table.getGameState().equals(GameState.WAITING_FOR_PLAYERS)) return;
+        table.setGameState(GameState.PRE_FLOP);
+
+        // Mélanger le deck.
+        GameHand gameHand = table.getGameHand();
+        gameHand.shuffleDeck();
+
+        // Mettre le potAmount à 0.
+        gameHand.setPotAmount(0);
+
+        // Retirer les "Blindes" (Petite et Grosse blinde) aux deux premiers joueurs et les mettre dans le pot.
+        collectBlinds(table);
+
+        // Distribuer les 2 cartes à tout le monde.
+        distribute(table);
+
+        // Mettre le currentTurnIndex sur le 3ème joueur (celui après la Grosse Blinde).
+        List<PlayerSession> activePlayers = table.getActivePlayers();
+        int dealerIdx = activePlayers.indexOf(gameHand.getDealerButton());
+        gameHand.setCurrentTurnIndex(getNextPlayerIdx(getNextPlayerIdx(dealerIdx, activePlayers.size()), activePlayers.size()));
+    }
+
+
+    /* Vérifie si le round est terminé.
+     * C'est le cas si chaque joueur étant en capacié de jouer l'a fait, 
+     * et qu'il a suivi la plus grosse mise
+    */
+    private boolean isRoundFinished(Table table) {
+        List<PlayerSession> activePlayers = table.getActivePlayers();
+
+        for (PlayerSession player : activePlayers) {
+            // On passe les joueurs qui se sont couchés ou ont all-in (ils ne peuvent plus rien faire)
+            if (player.hasFolded() || player.isAllIn()) continue;
+
+            if (!(player.hasActed() && (player.getBetInCurrentRound() == table.getGameHand().getHighestBet()))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    private void handleFold(PlayerSession player) {
+        // Mise à jour du flag
+        player.setHasFolded(true);
+    }
+
+
+    private void  handleCheck(Table table, Action action, PlayerSession player) {
+        // Si le joueur a toujours la mise la plus élevée, il s'est passé un tour sans RAISE
+        // Donc tout le monde à CHECK
+        if (player.getBetInCurrentRound() != table.getGameHand().getHighestBet()) return;
+    }
+
+
+    private void handleCall(Table table, Action action, PlayerSession player) {
+        double amountToWithdraw = table.getGameHand().getHighestBet() - player.getBetInCurrentRound();
+
+        if (player.getCurrentStack() < amountToWithdraw) return;
+
+        player.bet(amountToWithdraw);
+        table.getGameHand().addToPot(amountToWithdraw);
+    }
+
+
+    private void  handleRaise(Table table, Action action, PlayerSession player) {
+        double newBet = action.getAmount();
+        if (newBet <= table.getGameHand().getHighestBet() || newBet > player.getCurrentStack()) return;
+
+        player.bet(newBet);
+        table.getGameHand().addToPot(newBet);
+        table.getGameHand().setHighestBet(newBet);
+
+        for (PlayerSession p : table.getActivePlayers()) {
+            if (!p.equals(player)) {
+                p.setHasActed(false);
+            }
+        }
+    }
+
+
+    private void handleAllIn(Table table, Action action, PlayerSession player) {
+        GameHand gameHand = table.getGameHand();
+        double newBet = player.getCurrentStack() + action.getAmount();
+
+        if (newBet > gameHand.getHighestBet()) {
+            gameHand.setHighestBet(newBet);
+        }
+
+        player.setAllIn(true);
+    }
+
+    /* Gère une action envoyée par un joueur
+     * Nécessité de vérifier sa légalité
+     */
+    public void processAction(Table table, Action action) {
+        GameHand gameHand = table.getGameHand();
+
+        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) return;
+
+        PlayerSession player = table.getActivePlayers().get(gameHand.getCurrentTurnIndex());
+        player.setHasActed(true);
+
+        switch(action.getActionType()) {
+            case ActionType.FOLD:
+                handleFold(player);
+                break;
+            case ActionType.CHECK:
+                handleCheck(table, action, player);
+                break;
+            case ActionType.CALL:
+                handleCall(table, action, player);
+                break;
+            case ActionType.RAISE:
+                handleRaise(table, action, player);
+                break;
+            case ActionType.ALL_IN:
+                handleAllIn(table, action, player);
+                break;
+        }
+
+        if (isRoundFinished(table)) {
+            table.goNextState();
+            updateGameState(table);
+        } else {
+            table.goNextPlayer();
+        }
+    }
+
+
+    public void dealFlop(Table t) {
         
-        t.showPlayerHands();
-        t.showGameHand();
-        t.showPlayers(winners);
+    }
+
+
+    public void dealTurn(Table t) {
+        
+    }
+
+
+    public void dealRiver(Table t) {
+        
+    }
+
+
+    public List<PlayerSession> evaluateShodown(Table t) {
+        return null;
+    }
+
+
+
+    /*======================================================================================
+     *======================================== MAIN ========================================
+     ======================================================================================= */
+
+    public static void main(String[] args) {
+        Table table = new Table();
+        PokerEngine engine = new PokerEngine();
+
+        for (int i = 0; i < 5; i++) table.addPlayer(new PlayerSession(i));
+
+        engine.startNewHand(table);
+        engine.dealFlop(table);
+        engine.dealTurn(table);
+        engine.dealRiver(table);
+
+        List<PlayerSession> winners = engine.evaluateShodown(table);
+
+        for (PlayerSession p : winners) {
+            System.out.println(p);
+        }
     }
 }

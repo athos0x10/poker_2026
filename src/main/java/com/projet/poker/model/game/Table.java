@@ -7,6 +7,9 @@ import main.java.com.projet.poker.engine.Card;
 import main.java.com.projet.poker.engine.GameState;
 
 public class Table {
+    /* Classe principale de gestion d'une partie de poker
+     * Equivalent de la classe Game
+    */
 
     private Long id;
     private String name;
@@ -35,24 +38,50 @@ public class Table {
         activePlayers.add(p);
     }
 
-    public List<PlayerSession> getActivePlayers() {
-        return activePlayers;
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
     }
 
-    public GameHand getHand() {
-        return gameHand;
+    public double getMinBet() {
+        return minBet;
+    }
+
+    public List<PlayerSession> getActivePlayers() {
+        return activePlayers;
     }
 
     public GameState getGameState() {
         return gameState;
     }
 
-    public void setGameState(GameState gameState) {
-        this.gameState = gameState;
-    }
-
     public GameHand getGameHand() {
         return gameHand;
+    }
+
+    public void goNextPlayer() {
+        gameHand.setCurrentTurnIndex((gameHand.getCurrentTurnIndex() + 1) % activePlayers.size());
+    }
+
+    public void goNextState() {
+        switch(gameState) {
+            case GameState.PRE_FLOP:
+                gameState = GameState.FLOP;
+                break;
+            case GameState.FLOP:
+                gameState = GameState.TURN;
+                break;
+            case GameState.TURN:
+                gameState = GameState.RIVER;
+                break;
+            case GameState.RIVER:
+                gameState = GameState.SHOWDOWN;
+                break;
+            case GameState.SHOWDOWN:
+                gameState = GameState.WAITING_FOR_PLAYERS;
+                break;
+            case WAITING_FOR_PLAYERS:
+                break;
+        }
     }
 
     public void showTableInfo() {
@@ -65,12 +94,6 @@ public class Table {
     public void showPlayerHands() {
         for (PlayerSession player : activePlayers) {
             System.out.println("Player " + player.getId() + ": " + player.displayHoleCards());
-        }
-    }
-
-    public void showPlayers(List<PlayerSession> players) {
-        for (PlayerSession p : players) {
-            System.out.println("Player " + p.getId());
         }
     }
 
