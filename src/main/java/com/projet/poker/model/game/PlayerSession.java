@@ -3,6 +3,8 @@ package main.java.com.projet.poker.model.game;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.border.StrokeBorder;
+
 import main.java.com.projet.poker.engine.Card;
 
 public class PlayerSession {
@@ -35,5 +37,19 @@ public class PlayerSession {
 
     public List<Card> getHoleCards() {
         return holeCards;
+    }
+    
+    public String displayHoleCards() {
+        StringBuilder s = new StringBuilder();
+
+        for (Card c : holeCards) {
+            s.append(c.toString() + " ");
+        }
+
+        return s.toString();
+    }
+
+    public long getId() {
+        return userId;
     }
 }

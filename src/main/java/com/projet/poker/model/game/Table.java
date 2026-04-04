@@ -3,6 +3,7 @@ package main.java.com.projet.poker.model.game;
 import java.util.ArrayList;
 import java.util.List;
 
+import main.java.com.projet.poker.engine.Card;
 import main.java.com.projet.poker.engine.GameState;
 
 public class Table {
@@ -13,11 +14,11 @@ public class Table {
     private int maxPlayers;
     private GameState gameState;
     private List<PlayerSession> activePlayers;
-    private GameHand currentHand;
+    private GameHand gameHand;
 
     public Table() {
         this.activePlayers = new ArrayList<>();
-        this.currentHand = new GameHand();
+        this.gameHand = new GameHand();
     }
     
     public Table(Long id, String name, double minBet, int maxPlayers) {
@@ -27,7 +28,7 @@ public class Table {
         this.maxPlayers = maxPlayers;
         this.gameState = GameState.WAITING_FOR_PLAYERS;
         this.activePlayers = new ArrayList<>();
-        this.currentHand = new GameHand();
+        this.gameHand = new GameHand();
     }
 
     public void addPlayer(PlayerSession p) {
@@ -39,7 +40,19 @@ public class Table {
     }
 
     public GameHand getHand() {
-        return currentHand;
+        return gameHand;
+    }
+
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+    }
+
+    public GameHand getGameHand() {
+        return gameHand;
     }
 
     public void showTableInfo() {
@@ -51,7 +64,23 @@ public class Table {
 
     public void showPlayerHands() {
         for (PlayerSession player : activePlayers) {
-            System.out.println("Player " + player.getHoleCards());
+            System.out.println("Player " + player.getId() + ": " + player.displayHoleCards());
         }
+    }
+
+    public void showPlayers(List<PlayerSession> players) {
+        for (PlayerSession p : players) {
+            System.out.println("Player " + p.getId());
+        }
+    }
+
+    public void showGameHand() {
+        StringBuilder s = new StringBuilder("GameHand: ");
+
+        for (Card c : gameHand.getCommunityCards()) {
+            s.append(c.toString() + " ");
+        }
+        
+        System.out.println(s.toString());
     }
 }

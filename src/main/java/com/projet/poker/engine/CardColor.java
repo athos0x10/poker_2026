@@ -5,10 +5,10 @@ public enum CardColor {
      * Les couleurs des cartes
      */
 
-    PIQUE("♠"),
-    TREFLE("♣"),
-    COEUR("♥"),
-    CARREAU("♦");
+    PIQUE("pique"),
+    TREFLE("trefle"),
+    COEUR("coeur"),
+    CARREAU("carreau");
 
     private final String symbol;
     

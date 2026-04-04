@@ -37,4 +37,12 @@ public class GameHand {
     public Deck getDeck() {
         return deck;
     }
+
+    public List<Card> getCommunityCards() {
+        return communityCards;
+    }
+
+    public void setCommunityCards(List<Card> communityCards) {
+        this.communityCards = communityCards;
+    }
 }

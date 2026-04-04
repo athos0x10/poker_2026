@@ -1,12 +1,14 @@
 package main.java.com.projet.poker.engine;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 import main.java.com.projet.poker.model.game.PlayerSession;
 import main.java.com.projet.poker.model.game.Table;
@@ -22,32 +24,98 @@ public class PokerEngine {
 
     public PokerEngine() {}
 
-    public Card getKeyByValue(HandData hand, Integer value) {
-        int i = 0;
+
+    /* Distribue des cartes à tous les joueurs
+    */
+    public void distribute(Table table, Deck deck) {
+        for (PlayerSession player: table.getActivePlayers()) {
+            player.getHoleCards().add(deck.drawCard());
+            player.getHoleCards().add(deck.drawCard());
+        }
+    }
+
+    /* Trie les cartes cummulées d'un joueur et de la table
+     */
+    public List<Card> sortCards(PlayerSession player, List<Card> communityCards) {
+        List<Card> allCards = new ArrayList<>();
+        allCards.addAll(player.getHoleCards());
+        allCards.addAll(communityCards);
+
+        CardComparator cmp = new CardComparator();
+        Collections.sort(allCards, cmp);
+            
+        return allCards;
+    }
+
+    /* Renvoie une map avec pour chaque valeur de carte, son nombre d'occurences
+    */
+    public HashMap<CardValue, Integer> countCardValues(List<Card> cards) {
+        HashMap<CardValue, Integer> map = new HashMap<>();
+
+        for (Card c : cards) {
+            map.merge(c.getCardValue(), 1, Integer::sum);
+        }
+
+        return map;
+    }
+
+    /* Renvoie une map avec pour chaque couleur de carte, son nombre d'occurences
+    */
+    public HashMap<CardColor, Integer> countCardColors(List<Card> cards) {
+        HashMap<CardColor, Integer> map = new HashMap<>();
+
+        for (Card c : cards) {
+            map.merge(c.getCardColor(), 1, Integer::sum);
+        }
+
+        return map;
+    }
+
+    /* Renvoie la liste des clés qui apparaissent 'targetCount' fois (une clé par valeur)
+     * Cela permet de trouver la combinaison (en couleur ou valeur)
+     * Ex: pour un full (avec une contrainte sur les valeurs), il peut y avoir dans le jeu 
+     * {Roi, Roi, Roi, Dame, 10, 10 10, 9, ...}
+     * ce qui renverra {Roi, 10} (en valeurs = 13, 10)
+    */
+    public <T extends Comparable<? super T>> List<T> findKeysWithCount(Map<T, Integer> countMap, Integer targetCount) {
+        List<T> matchingKeys = new ArrayList<>();
+
+        for (Map.Entry<T, Integer> entry : countMap.entrySet()) {
+            if (Objects.equals(entry.getValue(), targetCount)) {
+                matchingKeys.add(entry.getKey());
+            }
+        }
         
-        for (Map.Entry<CardValue, Integer> entry : hand.getCountCardValues().entrySet()) {
-            if (Objects.equals(value, entry.getValue())) {
-                return hand.getSortedCards().get(i);
-            }
-            i++;
-        }
-        return null;
+        // Une HashMap ne conserve pas l'ordre.
+        // Trier à nouveau est plus "sûr" que d'utiliser une LinkedHashMap
+        Collections.sort(matchingKeys, Collections.reverseOrder());; // Ordre décroissant
+
+        return matchingKeys;
     }
 
-    // A corriger: n'ajoute pas les 3 cartes
-    public List<Card> getKeysByValue(HandData hand, Integer value, int max) {
-        int i = 0, n = 0;
-        List<Card> keys = new ArrayList<>();
-        for (Map.Entry<CardValue, Integer> entry : hand.getCountCardValues().entrySet()) {
-            if (Objects.equals(value, entry.getValue()) && n < max) {
-                keys.add(hand.getSortedCards().get(i));
-                n++;
+    /* Renvoie toutes les cartes dont la clé fait partie de 'targetValues' (valeur ou couleur)
+     * Cela permet de renvoyer toutes les cartes de la combinaison
+     * Ex: pour un full (contraite sur les valeurs) dont le résultat de findValuesWithCount est {13, 10},
+     * on récupère  {Roi, Roi, Roi, 10, 10 10}
+     * Note: les cartes sont triées car celles en entrée sont triées aussi, donc la boucle garde l'ordre
+     * - targetAtributes: liste des couleurs ou valeurs recherchées
+     * - extractor: fonction pour extraire l'attribut de la carte: cardValue ou cardColor
+    */
+    public <T> List<Card> extractCards(List<Card> sortedCards, List<T> targetAttributes, Function<Card, T> extractor) {
+        List<Card> extracted = new ArrayList<>();
+
+        for (Card c : sortedCards) {
+            if (targetAttributes.contains(extractor.apply(c))) {
+                extracted.add(c);
             }
-            i++;
         }
-        return keys;
+
+        return extracted;
     }
 
+    /* Complète la combinaison avec les meilleurs cartes de façon à toujours avoir 5 cartes dans la combinaison,
+     * et pourvoir ainsi départager les égalités.
+    */
     public void updateBestWithKickers(List<Card> currentBest, List<Card> ordered) {
         int numberOfKickers = MAX_HAND - currentBest.size();
         if (numberOfKickers == 0) return;
@@ -64,85 +132,63 @@ public class PokerEngine {
         currentBest.addAll(temp);
     }
 
-    public void distribute(Table table, Deck deck) {
-        for (PlayerSession player: table.getActivePlayers()) {
-            player.getHoleCards().add(deck.drawCard());
-            player.getHoleCards().add(deck.drawCard());
-        }
-    }
+    /* Une combinaison est un carré si elle possède 4 cartes de la même valeur */
+    public List<Card> findCarre(HandData hand) {
+        // renvoie toutes les occurences de 4 (il ne peut en avoir qu'une seule ou 0)
+        List<CardValue> carreValues = findKeysWithCount(hand.getCountCardValues(), 4); 
 
-    public List<Card> sortCards(PlayerSession player, List<Card> communityCards) {
-        List<Card> allCards = new ArrayList<>();
-        allCards.addAll(player.getHoleCards());
-        allCards.addAll(communityCards);
-
-        CardComparator cmp = new CardComparator();
-        Collections.sort(allCards, cmp);
-            
-        return allCards;
-    }
-
-    public HashMap<CardValue, Integer> countCardValues(List<Card> cards) {
-        HashMap<CardValue, Integer> map = new HashMap<>();
-
-        for (Card c : cards) {
-            map.merge(c.getCardValue(), 1, Integer::sum);
-        }
-
-        return map;
-    }
-
-    public HashMap<CardColor, Integer> countCardColors(List<Card> cards) {
-        HashMap<CardColor, Integer> map = new HashMap<>();
-
-        for (Card c : cards) {
-            map.merge(c.getCardColor(), 1, Integer::sum);
-        }
-
-        return map;
-    }
-
-    public List<Card> isCarre(HandData hand) {
-        List<Card> best = getKeysByValue(hand, 4, MAX_HAND);
-
-        if (best.size() > 0) {
-            updateBestWithKickers(best, hand.getSortedCards());
+        if (carreValues.size() == 1) {
+            List<Card> sorted = hand.getSortedCards();
+            List<Card> best = extractCards(sorted, carreValues, Card::getCardValue); // On extrait les cartes associées
+            updateBestWithKickers(best, sorted); // On complète avec la meilleur carte restante de la main
             return best;
-        } else {
-            return null;
         }
+
+        return null;
     }
 
-    public List<Card> isFull(HandData hand) {
-        List<Card> best = getKeysByValue(hand, 3, MAX_HAND);
-        if (best.size() < MAX_HAND) best.addAll(getKeysByValue(hand, 2, MAX_HAND - best.size()));
+    /* Une combinaison est un full si elle possède 2 fois 3 cartes identiques,
+     * Ou bien une fois 3 cartes et une fois 2 cartes identiques.
+    */
+    public List<Card> findFull(HandData hand) {
+        // On cherche les occurences de 3, il peut y en avoir 0, 1 ou 2
+        List<CardValue> fullValues = findKeysWithCount(hand.getCountCardValues(), 3);
+        // S'il n'y a qu'une fois 3 carte, il faut vérifier s'il n'existe pas une paire pour former le full
+        if (fullValues.size() < 2) fullValues.addAll(findKeysWithCount(hand.getCountCardValues(), 2));
+
+        // Il est possible qu'il y ait plusieurs paires, mais on ne doit garder que 2 types de cartes
+        if (fullValues.size() >= 2) fullValues = new ArrayList<>(fullValues.subList(0, 2));
+
+        List<Card> best = extractCards(hand.getSortedCards(), fullValues, Card::getCardValue);
         
-        if (best.size() == MAX_HAND) {
-            return best;
-        } else {
-            return null;
-        }
-        // return (Collections.frequency(map.values(), 3) == 2)
-        //     || (map.containsValue(3) && map.containsValue(2));
+        return best.size() == MAX_HAND ? best : null;
     }
 
-    public boolean testFirstQuinte(List<Card> cards) {
-        return cards.getLast().getCardValue().equals(CardValue.AS)
-            && cards.getFirst().getCardValue().equals(CardValue.DEUX)
-            && cards.get(1).getCardValue().equals(CardValue.TROIS)
-            && cards.get(2).getCardValue().equals(CardValue.QUATRE)
-            && cards.get(3).getCardValue().equals(CardValue.CINQ);
+    /* Combinaison particulière AS,2,3,4,5
+    */
+    public boolean findFirstQuinte(List<Card> cards) {
+        return cards.getFirst().getCardValue().equals(CardValue.AS)
+            && cards.getLast().getCardValue().equals(CardValue.DEUX)
+            && cards.get(cards.size() - 2).getCardValue().equals(CardValue.TROIS)
+            && cards.get(cards.size() - 3).getCardValue().equals(CardValue.QUATRE)
+            && cards.get(cards.size() - 4).getCardValue().equals(CardValue.CINQ);
     }
 
-    public List<Card> isQuinte(HandData hand) {
-        // Enlever les doublons
+    /* Une combinaison est une quinte si 5 cartes se suivent, y compris
+     *  10,VALET,DAME,ROI,AS (naturelle) ou AS,2,3,4,5 (cas particulier testFirstQuinte)
+     *
+    */
+    public List<Card> findQuinte(HandData hand) {
+        // Il faut supprimer les doublons pour ne pas biaiser le compteur
         LinkedHashSet<Card> set = new LinkedHashSet<>(hand.getSortedCards());
+        // On recréé la liste triée sans les doublons
         List<Card> cards = new ArrayList<>();
         cards.addAll(set);
 
-        int count = 0;
+        int i, count = 0;
 
-        for (int i = 0; i < cards.size() - 1; i++) {
+        // Rappel: cards est triée par ordre décroissant (AS, ROI, DAME, ..., 2)
+        for (i = 0; i < cards.size() - 1; i++) {
             if (cards.get(i).getCardValue().getValue() == 
                 (cards.get(i + 1).getCardValue().getValue() + 1)) {
                  count++;   
@@ -152,50 +198,143 @@ public class PokerEngine {
         }
 
         if (count >= 5) {
-            return best;
-        } else {
-            return testFirstQuinte(cards);
+            // Les 5 cartes se suivent
+            return new ArrayList<>(cards.subList(i - 4, i + 1));
         }
+
+        // On test le cas particulier
+        if (findFirstQuinte(cards)) {
+            List<Card> result = new ArrayList<>(cards.subList(cards.size() - 4, cards.size()));
+            result.add(cards.getFirst());
+            return result;
+        } 
+
+        return null;
     }
 
-    public boolean isBrelan(HandData hand) {
-        return hand.getCountCardValues().containsValue(3);
+    /* Une combinaison est un brelan si elle contient 3 cartes de même valeur
+     * (puisque le full est testé AVANT)
+     */
+    public List<Card> findBrelan(HandData hand) {
+        // Renvoi les cartes qui apparaissent 3 fois, il y en a de 0 ou 1 type car le full est déjà traité
+        List<CardValue> brelanValues = findKeysWithCount(hand.getCountCardValues(), 3);
+
+        if (brelanValues.size() == 1) {
+            List<Card> sorted = hand.getSortedCards();
+            List<Card> best = extractCards(sorted, brelanValues, Card::getCardValue); // On extrait les cartes associées
+            updateBestWithKickers(best, sorted); // On complète avec la meilleur carte restante de la main
+            return best;
+        }
+
+        return null;
     }
 
-    public boolean isDoublePaire(HandData hand) {
-        return Collections.frequency(
-            hand.getCountCardValues().values(), 2
-        ) >= 2;
+    /* Une combinaison est une paire double si elle possède aux moins deux paires
+    */
+    public List<Card> findDoublePaire(HandData hand) {
+        List<CardValue> pairValues = findKeysWithCount(hand.getCountCardValues(), 2);
+
+        if (pairValues.size() >= 2) {
+            // On ne garde que les deux meilleurs paires
+            List<CardValue> bestTwoPairs = new ArrayList<>(pairValues.subList(0,  2));
+            List<Card> sorted = hand.getSortedCards();
+            List<Card> best = extractCards(sorted, bestTwoPairs, Card::getCardValue);
+            updateBestWithKickers(best, sorted);
+            return best;
+        }
+        
+        return null;
     }
     
-    public boolean isPaire(HandData hand) {
-        return Collections.frequency(
-            hand.getCountCardValues().values(), 2
-        ) == 1;    
+    /* Une combinaison est une paire si elle possède deux cartes seulement avec la même valeur
+     * (la double paire est traitée avant)
+     */
+    public List<Card> findPaire(HandData hand) {
+        List<CardValue> pairValue = findKeysWithCount(hand.getCountCardValues(), 2);
+
+        if (pairValue.size() == 1) {
+            List<Card> best = extractCards(hand.getSortedCards(), pairValue, Card::getCardValue);
+            updateBestWithKickers(best, hand.getSortedCards());
+            return best;
+        }
+        
+        return null;
     }
 
-    public boolean isFlush(HandData hand) {
-        return hand.getCountCardColors().containsValue(5);
+    /* Une combinaison est un flush si elle possède 5 cartes de la même couleur
+     * (n'importe lesquelles)
+    */
+    public List<Card> findFlush(HandData hand) {
+        List<CardColor> flushValue = findKeysWithCount(hand.getCountCardColors(), 5);
+
+        if (flushValue.size() == 1) {
+            return extractCards(hand.getSortedCards(), flushValue, Card::getCardColor);
+        }
+        
+        return null;
     }
     
-    public boolean isQuinteFlush(HandData hand) {
-        return isQuinte(hand) && isFlush(hand);
+    /* Une combinaison est une quinte flush si c'est une quinte (les 5 cartes se suivent)
+     * ET que CES 5 cartes sont toutes de la même couleur (pas seulement 5 cartes de la main)
+     */
+    public List<Card> findQuinteFlush(HandData hand) {
+        List<Card> quinteCards = findQuinte(hand);
+        if (quinteCards == null) return null;
+
+        CardColor color = quinteCards.getFirst().getCardColor();
+
+        for (Card c : quinteCards) {
+            if (!c.getCardColor().equals(color)) {
+                return null;
+            }
+        }
+
+        return quinteCards;
     }
 
+    /* Evalue une main en positionannt le type de combinaison (ex: QUINTE_FLUSH)
+     * et en donnant les meilleurs 5 cartes (pour les égalités et l'évaluation du score)
+    */
     public void evaluateHand(HandData hand) {
-        if (isQuinteFlush(hand)){ hand.setType(HandType.QUINTE_FLUSH); return; }
-        if (isCarre(hand)){ hand.setType(HandType.CARRE); return; }
-        if (isFull(hand)){ hand.setType(HandType.FULL); return; }
-        if (isFlush(hand)){ hand.setType(HandType.FLUSH); return; }
-        if (isQuinte(hand)){ hand.setType(HandType.QUINTE); return; }
-        if (isBrelan(hand)){ hand.setType(HandType.BRELAN); return; }
-        if (isDoublePaire(hand)){ hand.setType(HandType.DOUBLE_PAIRE); return; }
-        if (isPaire(hand)){ hand.setType(HandType.PAIRE); return; }
+        List<Card> best;
+        List<Function<HandData, List<Card>>> evaluators = Arrays.asList(
+            this::findQuinteFlush,
+            this::findCarre, 
+            this::findFull, 
+            this::findFlush, 
+            this::findQuinte,
+            this::findBrelan,
+            this::findDoublePaire, 
+            this::findPaire
+        );
+
+        List<HandType> types = Arrays.asList(
+            HandType.QUINTE_FLUSH,
+            HandType.CARRE,
+            HandType.FULL,
+            HandType.FLUSH,
+            HandType.QUINTE,
+            HandType.BRELAN,
+            HandType.DOUBLE_PAIRE,
+            HandType.PAIRE
+        );
+
+        for (int i = 0; i < evaluators.size(); i++) {
+            if ((best = evaluators.get(i).apply(hand)) != null) {
+                hand.setType(types.get(i));
+                hand.setBestFiveCards(best);
+                return;
+            }
+        }
         
         hand.setType(HandType.CARTE_HAUTE); 
+        hand.setBestFiveCards(new ArrayList<>(hand.getSortedCards().subList(0, MAX_HAND)));
+
         return;
     }
 
+    /* Evalue la main d'un seul joueur en fonction des cartes présentes sur la table
+     */
     public HandData evaluateSinglePlayer(PlayerSession player, List<Card> community) {
         List<Card> sortedCards = sortCards(player, community);
         HashMap<CardValue, Integer> cardValues = countCardValues(sortedCards);
@@ -207,11 +346,12 @@ public class PokerEngine {
         return hand;
     }
 
+    /* Compare les valeurs des cartes en cas d'égalité
+     */
     public int compareTieBreak(HandData h1, HandData h2) {
-        List<Card> h1List = h1.getSortedCards();
-        List<Card> h2List = h2.getSortedCards();
+        List<Card> h1List = h1.getBestFiveCards();
+        List<Card> h2List = h2.getBestFiveCards();
 
-        // A corriger: prendre en compte le kicker, ...
         for (int i = 0; i < h1List.size(); i++) {
             int v1 = h1List.get(i).getCardValue().getValue();
             int v2 = h2List.get(i).getCardValue().getValue();
@@ -228,6 +368,9 @@ public class PokerEngine {
         return 0;
     }
 
+    /* Compare les mains de deux joueurs,
+     * en regardant d'abord la combinaison puis les valeurs des cartes
+    */
     public int compareHands(HandData h1, HandData h2) {
         int h1Score = h1.getType().getScore();
         int h2Score = h2.getType().getScore();
@@ -238,6 +381,42 @@ public class PokerEngine {
         } else {
             return compareTieBreak(h1, h2);
         }
+    }
+
+    List<PlayerSession> determineWinners(List<PlayerSession> players, List<Card> communityCards) {
+        if (players == null || players.isEmpty()) return null;
+
+        int i;
+        List<PlayerSession> winners = new ArrayList<>();
+
+        // Map pour stocker les mains des joueurs
+        HashMap<PlayerSession, HandData> playerHands = new HashMap<>();
+        for (PlayerSession p : players) {
+            playerHands.put(p, evaluateSinglePlayer(p, communityCards));
+        }
+
+        // Gagnant temporaire
+        PlayerSession currentWinner = players.getFirst();
+        winners.add(currentWinner);
+        HandData winningHand = playerHands.get(currentWinner);
+
+        for (i = 1; i < players.size(); i++) {
+            PlayerSession candidate = players.get(i);
+            HandData candidateHand = playerHands.get(candidate);
+
+            int cmp = compareHands(candidateHand, winningHand);
+            
+            // Le second joueur possède une meilleur main que le gagnant courant
+            if (cmp > 0) {
+                winners.clear();
+                winners.add(candidate);
+                winningHand = candidateHand;
+            } else if (cmp == 0) {
+                winners.add(candidate);
+            }
+        }
+
+        return winners;
     }
 
     public static void main(String[] args) {
@@ -251,6 +430,14 @@ public class PokerEngine {
 
         deck.shuffle();
         engine.distribute(t, deck);
+
+        List<Card> tableHand = deck.drawCards(5);
+        t.getGameHand().setCommunityCards(tableHand);
+
+        List<PlayerSession> winners = engine.determineWinners(t.getActivePlayers(), tableHand);
+        
         t.showPlayerHands();
+        t.showGameHand();
+        t.showPlayers(winners);
     }
 }

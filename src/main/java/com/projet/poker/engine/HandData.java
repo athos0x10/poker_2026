@@ -5,11 +5,23 @@ import java.util.HashMap;
 import java.util.List;
 
 public class HandData {
+    /* Données d'une carte utiles pour trouver les combinaison
+     * et évaluer les mains.
+    */
     
+     // Type de combinaison (ex: Quinte FLush, ...)
     private HandType type;
-    private HashMap<CardValue, Integer> countCardValues;
+
+    // Nombre d'occurences en Valeur de chaque carte (ex: Il y a 2 Rois dans la main)
+    private HashMap<CardValue, Integer> countCardValues; 
+
+    // Nombre d'occurences en Couleur de chaque carte (ex: Il y a 2 Piques dans la main)
     private HashMap<CardColor, Integer> countCardColors;
+
+    // Cartes triées par valeur décroissante: AS, ROI, DAME, ..., 2
     private List<Card> sortedCards;
+
+    // Combinaison complète (ex: ROI, ROI , ROI, 10, 10, 2)
     private List<Card> bestFiveCards;
 
     public HandData(HashMap<CardValue, Integer> cardValues,
