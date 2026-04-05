@@ -58,10 +58,6 @@ public class Table {
         return gameHand;
     }
 
-    public void goNextPlayer() {
-        gameHand.setCurrentTurnIndex((gameHand.getCurrentTurnIndex() + 1) % activePlayers.size());
-    }
-
     public void goNextState() {
         switch(gameState) {
             case GameState.PRE_FLOP:
@@ -80,7 +76,7 @@ public class Table {
                 gameState = GameState.WAITING_FOR_PLAYERS;
                 break;
             case WAITING_FOR_PLAYERS:
-                break;
+                gameState = GameState.PRE_FLOP;
         }
     }
 

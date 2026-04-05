@@ -11,8 +11,10 @@ public class PlayerSession {
     private long tableId;
     private long userId;
     private int seatNumber;
-    private List<Card> holeCards;
 
+    // Cartes en main
+    private List<Card> holeCards;
+    // Jetons (ou monnaie)
     private double currentStack;
 
     // Le joueur s'est couché

@@ -54,6 +54,16 @@ public class Deck {
         return cardsToDraw;
     }
 
+    /* Retire et retourne la première carte du deck */
+    public Card drawCard() {
+        return cards.removeFirst();
+    }
+
+    /* Brûle une carte */
+    public void burnCard() {
+        cards.removeFirst();
+    }
+
     /*
      * Retourne la liste des cartes du deck
      */

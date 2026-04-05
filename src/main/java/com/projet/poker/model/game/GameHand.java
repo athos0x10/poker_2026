@@ -42,8 +42,16 @@ public class GameHand {
         deck.shuffle();
     }
 
-    public List<Card> drawCardsFromDeck(int n) {
+    public List<Card> drawCards(int n) {
         return deck.drawCards(n);
+    }
+
+    public Card drawCard() {
+        return deck.drawCard();
+    }
+
+    public void burnCard() {
+        deck.burnCard();
     }
 
     public void setPotAmount(double potAmount) {

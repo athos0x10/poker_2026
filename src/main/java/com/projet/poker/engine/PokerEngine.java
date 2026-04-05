@@ -447,7 +447,7 @@ public class PokerEngine {
     */
     private void distribute(Table table) {
         for (PlayerSession player: table.getActivePlayers()) {
-            player.getHoleCards().addAll(table.getGameHand().drawCardsFromDeck(2));
+            player.getHoleCards().addAll(table.getGameHand().drawCards(2));
         }
     }
 
@@ -460,17 +460,19 @@ public class PokerEngine {
         return (index + 1) % size;
     }
 
-    /* Récupère l'indice du prochain joueur qui commencera le tour
-     * (il ne doit pas s'être couché)
+    /* Récupère l'indice du prochain joueur qui commencera le round
+     * si index = dealerIdx ou bien seulement le prochain à jouer si index = currentIdx
+     * (il ne doit pas s'être couché ou êre all-in)
+     * Normalement, il n'y a pas besoin de protection sur la boucle.
+     * Si on retombe sur le premier joueur (et donc ça tourne à l'infini car tout le monde est all-in par exemple),
+     * alors isRoundFinished aura renvoyé true dans processAction ! 
     */
-    private int findNextPlayer(Table table) {
-        GameHand gameHand = table.getGameHand();
+    private int findNextPlayer(Table table, int index) {
         List<PlayerSession> players = table.getActivePlayers();
 
-        int dealerIdx = table.getActivePlayers().indexOf(gameHand.getDealerButton());
-        int nextIdx = (dealerIdx + 1) % table.getActivePlayers().size();
+        int nextIdx = (index + 1) % table.getActivePlayers().size();
 
-        while (players.get(nextIdx).hasFolded()) {
+        while (players.get(nextIdx).hasFolded() || players.get(nextIdx).isAllIn()) {
             nextIdx = (nextIdx + 1) % players.size();
         }
 
@@ -489,7 +491,9 @@ public class PokerEngine {
         }
 
         gameHand.setHighestBet(0);
-        gameHand.setCurrentTurnIndex(findNextPlayer(table));
+        
+        int dealerIdx = table.getActivePlayers().indexOf(gameHand.getDealerButton());
+        gameHand.setCurrentTurnIndex(findNextPlayer(table, dealerIdx));
     }
 
 
@@ -571,113 +575,174 @@ public class PokerEngine {
     }
 
 
-    private void handleFold(PlayerSession player) {
-        // Mise à jour du flag
+    private boolean handleFold(PlayerSession player) {
         player.setHasFolded(true);
+        return true;
     }
 
 
-    private void  handleCheck(Table table, Action action, PlayerSession player) {
+    private boolean  handleCheck(Table table, Action action, PlayerSession player) {
         // Si le joueur a toujours la mise la plus élevée, il s'est passé un tour sans RAISE
         // Donc tout le monde à CHECK
-        if (player.getBetInCurrentRound() != table.getGameHand().getHighestBet()) return;
+        return player.getBetInCurrentRound() == table.getGameHand().getHighestBet();
     }
 
 
-    private void handleCall(Table table, Action action, PlayerSession player) {
+    private boolean handleCall(Table table, Action action, PlayerSession player) {
         double amountToWithdraw = table.getGameHand().getHighestBet() - player.getBetInCurrentRound();
+        if (player.getCurrentStack() < amountToWithdraw) return false;
 
-        if (player.getCurrentStack() < amountToWithdraw) return;
+        // Le joueur dans son action, indique le prix pour suivre, pas ce qu'il va payer en plus
+        player.bet(amountToWithdraw);
+        table.getGameHand().addToPot(amountToWithdraw);
+        return true;
+    }
+
+
+    private boolean handleRaise(Table table, Action action, PlayerSession player) {
+        double targetBet = action.getAmount();
+        if (targetBet <= table.getGameHand().getHighestBet()) return false;
+
+        // Le joueur dans son action, indique à combien il va élever le bet, pas ce qu'il va payer en plus
+        double amountToWithdraw = targetBet - player.getBetInCurrentRound();
+        if (amountToWithdraw > player.getCurrentStack()) return false;
 
         player.bet(amountToWithdraw);
         table.getGameHand().addToPot(amountToWithdraw);
-    }
+        table.getGameHand().setHighestBet(targetBet);
 
-
-    private void  handleRaise(Table table, Action action, PlayerSession player) {
-        double newBet = action.getAmount();
-        if (newBet <= table.getGameHand().getHighestBet() || newBet > player.getCurrentStack()) return;
-
-        player.bet(newBet);
-        table.getGameHand().addToPot(newBet);
-        table.getGameHand().setHighestBet(newBet);
-
+        // Les autres joueurs doivent pouvoir remiser
         for (PlayerSession p : table.getActivePlayers()) {
             if (!p.equals(player)) {
                 p.setHasActed(false);
             }
         }
+        return true;
     }
 
 
-    private void handleAllIn(Table table, Action action, PlayerSession player) {
+    private boolean handleAllIn(Table table, Action action, PlayerSession player) {
         GameHand gameHand = table.getGameHand();
-        double newBet = player.getCurrentStack() + action.getAmount();
+        double amountToWithdraw = player.getCurrentStack();
+        // Le joueur n'a plus d'argent (ou de jetons)
+        if (amountToWithdraw <= 0) return false;
 
-        if (newBet > gameHand.getHighestBet()) {
-            gameHand.setHighestBet(newBet);
+        player.bet(amountToWithdraw);
+        gameHand.addToPot(amountToWithdraw);
+
+        // Si la nouvelle mise total du joueur dépasse le record de la table
+        if (player.getBetInCurrentRound() > gameHand.getHighestBet()) {
+            gameHand.setHighestBet(player.getBetInCurrentRound());
+
+            // Agit comme un RAISE !
+            for (PlayerSession p : table.getActivePlayers()) {
+                if (!p.equals(player)) {
+                    p.setHasActed(false);
+                }
+            }
         }
 
-        player.setAllIn(true);
+
+    player.setAllIn(true);
+        return true;
     }
 
-    /* Gère une action envoyée par un joueur
-     * Nécessité de vérifier sa légalité
+    
+    public void dealFlop(Table t) {
+        GameHand g = t.getGameHand();
+
+        g.burnCard();
+        g.getCommunityCards().addAll(g.drawCards(3));
+        t.goNextState();
+
+        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+    }
+
+
+    public void dealTurn(Table t) {
+        GameHand g = t.getGameHand();
+
+        g.burnCard();
+        g.getCommunityCards().add(g.drawCard());
+        t.goNextState();
+
+        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+    }
+
+
+    public void dealRiver(Table t) {
+        // Même sémantique
+        dealTurn(t);
+    }
+
+
+    public List<PlayerSession> evaluateShowdown(Table table) {
+        List<Card> communityCards = table.getGameHand().getCommunityCards();
+        List<PlayerSession> activePlayers = table.getActivePlayers();
+
+        List<PlayerSession> winners = determineWinners(activePlayers, communityCards);
+
+        double winnersGain = table.getGameHand().getPotAmount() / winners.size();
+
+        for (PlayerSession winner : winners) {
+            winner.deposit(winnersGain);
+        }
+
+        table.goNextState();
+
+        return winners;
+    }
+
+
+    /* Gère une action envoyée par un joueur, nécessité de vérifier sa légalité
+     * Normalement, on a pas besoin de vérifier qu'un joueur est couché ou all-in
+     * car il passera son tour selon l'algo de findNextPlayer.
+     * Autrement dit, un joueur entre dans processAction s'il n'a pas encore joué,
+     * ou que sa dernière action est CALL, RAISE ou CHECK.
+     * De même, si un joueur clique sur le bouton pour CALL en dehors de son tour tandis qu'il
+     * est all-in, la ligne vérifiant l'ID renverra false (son action sera ignorée)
      */
-    public void processAction(Table table, Action action) {
+    public boolean processAction(Table table, Action action) {
         GameHand gameHand = table.getGameHand();
 
-        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) return;
+        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) return false;
 
         PlayerSession player = table.getActivePlayers().get(gameHand.getCurrentTurnIndex());
-        player.setHasActed(true);
+
+        // isLegal reste à false vraiment si le coup n'est pas autorisé (ex: jetons insuffisants)
+        boolean isLegal = false;
 
         switch(action.getActionType()) {
             case ActionType.FOLD:
-                handleFold(player);
+                isLegal = handleFold(player);
                 break;
             case ActionType.CHECK:
-                handleCheck(table, action, player);
+                isLegal = handleCheck(table, action, player);
                 break;
             case ActionType.CALL:
-                handleCall(table, action, player);
+                isLegal = handleCall(table, action, player);
                 break;
             case ActionType.RAISE:
-                handleRaise(table, action, player);
+                isLegal = handleRaise(table, action, player);
                 break;
             case ActionType.ALL_IN:
-                handleAllIn(table, action, player);
+                isLegal = handleAllIn(table, action, player);
                 break;
         }
+
+        if (!isLegal) return false;
+        player.setHasActed(true);
 
         if (isRoundFinished(table)) {
             table.goNextState();
             updateGameState(table);
         } else {
-            table.goNextPlayer();
+            int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
+            gameHand.setCurrentTurnIndex(nextTurn);
         }
+
+        return true;
     }
-
-
-    public void dealFlop(Table t) {
-        
-    }
-
-
-    public void dealTurn(Table t) {
-        
-    }
-
-
-    public void dealRiver(Table t) {
-        
-    }
-
-
-    public List<PlayerSession> evaluateShodown(Table t) {
-        return null;
-    }
-
 
 
     /*======================================================================================
@@ -695,7 +760,7 @@ public class PokerEngine {
         engine.dealTurn(table);
         engine.dealRiver(table);
 
-        List<PlayerSession> winners = engine.evaluateShodown(table);
+        List<PlayerSession> winners = engine.evaluateShowdown(table);
 
         for (PlayerSession p : winners) {
             System.out.println(p);
