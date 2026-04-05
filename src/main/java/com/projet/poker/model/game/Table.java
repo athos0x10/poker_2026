@@ -58,28 +58,6 @@ public class Table {
         return gameHand;
     }
 
-    public void goNextState() {
-        switch(gameState) {
-            case GameState.PRE_FLOP:
-                gameState = GameState.FLOP;
-                break;
-            case GameState.FLOP:
-                gameState = GameState.TURN;
-                break;
-            case GameState.TURN:
-                gameState = GameState.RIVER;
-                break;
-            case GameState.RIVER:
-                gameState = GameState.SHOWDOWN;
-                break;
-            case GameState.SHOWDOWN:
-                gameState = GameState.WAITING_FOR_PLAYERS;
-                break;
-            case WAITING_FOR_PLAYERS:
-                gameState = GameState.PRE_FLOP;
-        }
-    }
-
     public void showTableInfo() {
         System.out.println("Table: " + name);
         System.out.println("Min Bet: " + minBet);

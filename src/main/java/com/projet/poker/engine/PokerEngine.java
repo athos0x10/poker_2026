@@ -32,6 +32,7 @@ public class PokerEngine {
      *=================================== EVALUATION ======================================
      ====================================================================================== */
 
+
     /* Trie les cartes cummulées d'un joueur et de la table
      */
     private List<Card> sortCards(PlayerSession player, List<Card> communityCards) {
@@ -442,10 +443,11 @@ public class PokerEngine {
      *================================= TOURS ET MISES ====================================
      ====================================================================================== */
 
+    /* METHODES UTILITAIRES */
 
     /* Distribue des cartes à tous les joueurs
     */
-    private void distribute(Table table) {
+    private void distributeHoleCards(Table table) {
         for (PlayerSession player: table.getActivePlayers()) {
             player.getHoleCards().addAll(table.getGameHand().drawCards(2));
         }
@@ -465,7 +467,7 @@ public class PokerEngine {
      * (il ne doit pas s'être couché ou êre all-in)
      * Normalement, il n'y a pas besoin de protection sur la boucle.
      * Si on retombe sur le premier joueur (et donc ça tourne à l'infini car tout le monde est all-in par exemple),
-     * alors isRoundFinished aura renvoyé true dans processAction ! 
+     * alors isRoundFinished aura renvoyé true dans processAction et donc on gerera là-bas les cas particuliers ! 
     */
     private int findNextPlayer(Table table, int index) {
         List<PlayerSession> players = table.getActivePlayers();
@@ -477,6 +479,80 @@ public class PokerEngine {
         }
 
         return nextIdx;
+    }
+
+
+    /* Nombre de joueurs qui n'ont pas FOLD 
+     * Si ce nombre vaut 1, la main s'arrête, le dernier joueur ramasse le pot.
+     * On renvoie les joueurs pour y avoir accès. On vérifiera le nombre avec size()
+    */
+    private List<PlayerSession> countSurvivors(Table table) {
+        List<PlayerSession> survivors = new ArrayList<>();
+
+        for (PlayerSession player : table.getActivePlayers()) {
+            if (!player.hasFolded()) {
+                survivors.add(player);
+            }
+        }
+
+        return survivors;
+    }
+
+
+    /* Nombre de joueurs n'ayant ni FOLD ni ALL-IN
+     * Si ce nombre vaut 0 ou 1 (ET qu'il y a plus d'un survivant), alors on déroule les cartes
+     * (RunTheBoard)
+     * On renvoie les joueurs pour y avoir accès. On vérifiera le nombre avec size()
+    */
+    private List<PlayerSession> countActiveBettors(Table table) {
+        List<PlayerSession> activeBettors = new ArrayList<>();
+
+        for (PlayerSession player : table.getActivePlayers()) {
+            if (!(player.hasFolded() || player.isAllIn())) {
+                activeBettors.add(player);
+            }
+        }
+
+        return activeBettors;
+    } 
+
+    public void goNextState(Table t) {
+        switch(t.getGameState()) {
+            case GameState.PRE_FLOP:
+                t.setGameState(GameState.FLOP);
+                break;
+            case GameState.FLOP:
+                t.setGameState(GameState.TURN);
+                break;
+            case GameState.TURN:
+                t.setGameState(GameState.RIVER);
+                break;
+            case GameState.RIVER:
+                t.setGameState(GameState.SHOWDOWN);
+                break;
+            case GameState.SHOWDOWN:
+                t.setGameState(GameState.WAITING_FOR_PLAYERS);
+                break;
+            case WAITING_FOR_PLAYERS:
+                t.setGameState(GameState.PRE_FLOP);
+        }
+    }
+
+    /* Nettoie la table */
+    public void clearTable(Table t) {
+        t.setGameState(GameState.WAITING_FOR_PLAYERS);
+        t.getGameHand().getCommunityCards().clear();
+        
+        for (PlayerSession p : t.getActivePlayers()) {
+            p.resetBet();
+            p.getHoleCards().clear();
+            p.setHasFolded(false);
+            p.setAllIn(false);
+            p.setHasActed(false);
+        }
+
+        // Sécurité même si c'est fait au début d'une manche (startNewHand)
+        t.getGameHand().setPotAmount(0);
     }
 
 
@@ -546,7 +622,7 @@ public class PokerEngine {
         collectBlinds(table);
 
         // Distribuer les 2 cartes à tout le monde.
-        distribute(table);
+        distributeHoleCards(table);
 
         // Mettre le currentTurnIndex sur le 3ème joueur (celui après la Grosse Blinde).
         List<PlayerSession> activePlayers = table.getActivePlayers();
@@ -643,54 +719,8 @@ public class PokerEngine {
         }
 
 
-    player.setAllIn(true);
+        player.setAllIn(true);
         return true;
-    }
-
-    
-    public void dealFlop(Table t) {
-        GameHand g = t.getGameHand();
-
-        g.burnCard();
-        g.getCommunityCards().addAll(g.drawCards(3));
-        t.goNextState();
-
-        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
-    }
-
-
-    public void dealTurn(Table t) {
-        GameHand g = t.getGameHand();
-
-        g.burnCard();
-        g.getCommunityCards().add(g.drawCard());
-        t.goNextState();
-
-        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
-    }
-
-
-    public void dealRiver(Table t) {
-        // Même sémantique
-        dealTurn(t);
-    }
-
-
-    public List<PlayerSession> evaluateShowdown(Table table) {
-        List<Card> communityCards = table.getGameHand().getCommunityCards();
-        List<PlayerSession> activePlayers = table.getActivePlayers();
-
-        List<PlayerSession> winners = determineWinners(activePlayers, communityCards);
-
-        double winnersGain = table.getGameHand().getPotAmount() / winners.size();
-
-        for (PlayerSession winner : winners) {
-            winner.deposit(winnersGain);
-        }
-
-        table.goNextState();
-
-        return winners;
     }
 
 
@@ -720,6 +750,119 @@ public class PokerEngine {
     }
 
 
+    /* Méthode permettant de dévoiler toutes les cartes
+     * et d'avancer directement à la fin de la manche quand tout le monde
+     * a ALL-IN
+    */
+   private void runTheBoard(Table t) {
+
+        // Si on est dans l'état RIVER, on a déjà distribué les cartes de cet état (on est à la fin)
+        while (t.getGameState() != GameState.RIVER) {
+            goNextState(t);
+
+            if (t.getGameState() == GameState.FLOP) dealFlop(t);
+            if (t.getGameState() == GameState.TURN) dealTurn(t);
+            if (t.getGameState() == GameState.RIVER) dealRiver(t);
+
+        }
+
+        evaluateShowdown(t);
+   }
+
+
+    /* Distribue les cartes sur la table en fonction de l'état du jeu */
+    private void distributeCards(Table table) {
+        switch (table.getGameState()) {
+            case GameState.FLOP: dealFlop(table); break;
+            case GameState.TURN: dealFlop(table); break;
+            case GameState.RIVER: dealFlop(table); break;
+            case GameState.SHOWDOWN: evaluateShowdown(table); return;
+            default: break;
+        }
+    }
+
+    
+    /* Gère la fin d'un round (voir processAction):
+     * - S'il n'y a qu'un survivor (voir la méthod utilitaire plus haut), on lui donne le pot
+     * - Si 0 ou 1 joueur peut encore miser (avec plusieurs survivant ayant ALL-IN), on déroule les cartes
+     * - Sinon, on continue normalement
+    */ 
+    private void handleRoundEnding(Table table) {
+        List<PlayerSession> survivors = countSurvivors(table);
+        List<PlayerSession> activeBettors = countActiveBettors(table);
+
+        if (survivors.size() == 1) {
+            // Fin de la manche
+            table.setGameState(GameState.WAITING_FOR_PLAYERS);
+
+            // Le gagant remporte le pot
+            PlayerSession winner = survivors.getFirst();
+            winner.deposit(table.getGameHand().getPotAmount());
+            // On nettoie pour la prochaine manche
+            clearTable(table);
+
+        } else if (activeBettors.size() <= 1 && survivors.size() > 1) {
+            runTheBoard(table);
+
+        } else {
+            goNextState(table);
+            distributeCards(table);
+            updateGameState(table);
+        }
+    }
+
+    
+    public void dealFlop(Table t) {
+        GameHand g = t.getGameHand();
+
+        g.burnCard();
+        g.getCommunityCards().addAll(g.drawCards(3));
+        t.setGameState(GameState.FLOP);
+
+        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+    }
+
+
+    public void dealTurn(Table t) {
+        GameHand g = t.getGameHand();
+
+        g.burnCard();
+        g.getCommunityCards().add(g.drawCard());
+        t.setGameState(GameState.TURN);
+
+        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+    }
+
+
+    public void dealRiver(Table t) {
+        GameHand g = t.getGameHand();
+
+        g.burnCard();
+        g.getCommunityCards().add(g.drawCard());
+        t.setGameState(GameState.RIVER);
+
+        for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+    }
+
+
+    public List<PlayerSession> evaluateShowdown(Table table) {
+        List<Card> communityCards = table.getGameHand().getCommunityCards();
+        List<PlayerSession> activePlayers = table.getActivePlayers();
+
+        List<PlayerSession> winners = determineWinners(activePlayers, communityCards);
+
+        double winnersGain = table.getGameHand().getPotAmount() / winners.size();
+
+        for (PlayerSession winner : winners) {
+            winner.deposit(winnersGain);
+        }
+
+        clearTable(table);
+
+        return winners;
+    }
+
+
     /* Gère une action envoyée par un joueur, nécessité de vérifier sa légalité
      * Normalement, on a pas besoin de vérifier qu'un joueur est couché ou all-in
      * car il passera son tour selon l'algo de findNextPlayer.
@@ -743,8 +886,7 @@ public class PokerEngine {
         player.setHasActed(true);
 
         if (isRoundFinished(table)) {
-            table.goNextState();
-            updateGameState(table);
+            handleRoundEnding(table);
         } else {
             int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
             gameHand.setCurrentTurnIndex(nextTurn);
