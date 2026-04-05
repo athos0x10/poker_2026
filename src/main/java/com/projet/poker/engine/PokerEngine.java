@@ -34,7 +34,7 @@ public class PokerEngine {
 
     /* Trie les cartes cummulées d'un joueur et de la table
      */
-    public List<Card> sortCards(PlayerSession player, List<Card> communityCards) {
+    private List<Card> sortCards(PlayerSession player, List<Card> communityCards) {
         List<Card> allCards = new ArrayList<>();
         allCards.addAll(player.getHoleCards());
         allCards.addAll(communityCards);
@@ -48,7 +48,7 @@ public class PokerEngine {
 
     /* Renvoie une map avec pour chaque valeur de carte, son nombre d'occurences
     */
-    public HashMap<CardValue, Integer> countCardValues(List<Card> cards) {
+    private HashMap<CardValue, Integer> countCardValues(List<Card> cards) {
         HashMap<CardValue, Integer> map = new HashMap<>();
 
         for (Card c : cards) {
@@ -61,7 +61,7 @@ public class PokerEngine {
 
     /* Renvoie une map avec pour chaque couleur de carte, son nombre d'occurences
     */
-    public HashMap<CardColor, Integer> countCardColors(List<Card> cards) {
+    private HashMap<CardColor, Integer> countCardColors(List<Card> cards) {
         HashMap<CardColor, Integer> map = new HashMap<>();
 
         for (Card c : cards) {
@@ -78,7 +78,7 @@ public class PokerEngine {
      * {Roi, Roi, Roi, Dame, 10, 10 10, 9, ...}
      * ce qui renverra {Roi, 10} (en valeurs = 13, 10)
     */
-    public <T extends Comparable<? super T>> List<T> findKeysWithCount(Map<T, Integer> countMap, Integer targetCount) {
+    private <T extends Comparable<? super T>> List<T> findKeysWithCount(Map<T, Integer> countMap, Integer targetCount) {
         List<T> matchingKeys = new ArrayList<>();
 
         for (Map.Entry<T, Integer> entry : countMap.entrySet()) {
@@ -103,7 +103,7 @@ public class PokerEngine {
      * - targetAtributes: liste des couleurs ou valeurs recherchées
      * - extractor: fonction pour extraire l'attribut de la carte: cardValue ou cardColor
     */
-    public <T> List<Card> extractCards(List<Card> sortedCards, List<T> targetAttributes, Function<Card, T> extractor) {
+    private <T> List<Card> extractCards(List<Card> sortedCards, List<T> targetAttributes, Function<Card, T> extractor) {
         List<Card> extracted = new ArrayList<>();
 
         for (Card c : sortedCards) {
@@ -119,7 +119,7 @@ public class PokerEngine {
     /* Complète la combinaison avec les meilleurs cartes de façon à toujours avoir 5 cartes dans la combinaison,
      * et pourvoir ainsi départager les égalités.
     */
-    public void updateBestWithKickers(List<Card> currentBest, List<Card> ordered) {
+    private void updateBestWithKickers(List<Card> currentBest, List<Card> ordered) {
         int numberOfKickers = MAX_HAND - currentBest.size();
         if (numberOfKickers == 0) return;
 
@@ -137,7 +137,7 @@ public class PokerEngine {
 
 
     /* Une combinaison est un carré si elle possède 4 cartes de la même valeur */
-    public List<Card> findCarre(HandData hand) {
+    private List<Card> findCarre(HandData hand) {
         // renvoie toutes les occurences de 4 (il ne peut en avoir qu'une seule ou 0)
         List<CardValue> carreValues = findKeysWithCount(hand.getCountCardValues(), 4); 
 
@@ -155,7 +155,7 @@ public class PokerEngine {
     /* Une combinaison est un full si elle possède 2 fois 3 cartes identiques,
      * Ou bien une fois 3 cartes et une fois 2 cartes identiques.
     */
-    public List<Card> findFull(HandData hand) {
+    private List<Card> findFull(HandData hand) {
         // On cherche les occurences de 3, il peut y en avoir 0, 1 ou 2
         List<CardValue> fullValues = findKeysWithCount(hand.getCountCardValues(), 3);
         // S'il n'y a qu'une fois 3 carte, il faut vérifier s'il n'existe pas une paire pour former le full
@@ -172,7 +172,7 @@ public class PokerEngine {
 
     /* Combinaison particulière AS,2,3,4,5
     */
-    public boolean findFirstQuinte(List<Card> cards) {
+    private boolean findFirstQuinte(List<Card> cards) {
         return cards.getFirst().getCardValue().equals(CardValue.AS)
             && cards.getLast().getCardValue().equals(CardValue.DEUX)
             && cards.get(cards.size() - 2).getCardValue().equals(CardValue.TROIS)
@@ -185,7 +185,7 @@ public class PokerEngine {
      *  10,VALET,DAME,ROI,AS (naturelle) ou AS,2,3,4,5 (cas particulier testFirstQuinte)
      *
     */
-    public List<Card> findQuinte(HandData hand) {
+    private List<Card> findQuinte(HandData hand) {
         // Il faut supprimer les doublons pour ne pas biaiser le compteur
         LinkedHashSet<Card> set = new LinkedHashSet<>(hand.getSortedCards());
         // On recréé la liste triée sans les doublons
@@ -223,7 +223,7 @@ public class PokerEngine {
     /* Une combinaison est un brelan si elle contient 3 cartes de même valeur
      * (puisque le full est testé AVANT)
      */
-    public List<Card> findBrelan(HandData hand) {
+    private List<Card> findBrelan(HandData hand) {
         // Renvoi les cartes qui apparaissent 3 fois, il y en a de 0 ou 1 type car le full est déjà traité
         List<CardValue> brelanValues = findKeysWithCount(hand.getCountCardValues(), 3);
 
@@ -240,7 +240,7 @@ public class PokerEngine {
 
     /* Une combinaison est une paire double si elle possède aux moins deux paires
     */
-    public List<Card> findDoublePaire(HandData hand) {
+    private List<Card> findDoublePaire(HandData hand) {
         List<CardValue> pairValues = findKeysWithCount(hand.getCountCardValues(), 2);
 
         if (pairValues.size() >= 2) {
@@ -259,7 +259,7 @@ public class PokerEngine {
     /* Une combinaison est une paire si elle possède deux cartes seulement avec la même valeur
      * (la double paire est traitée avant)
      */
-    public List<Card> findPaire(HandData hand) {
+    private List<Card> findPaire(HandData hand) {
         List<CardValue> pairValue = findKeysWithCount(hand.getCountCardValues(), 2);
 
         if (pairValue.size() == 1) {
@@ -275,7 +275,7 @@ public class PokerEngine {
     /* Une combinaison est un flush si elle possède 5 cartes de la même couleur
      * (n'importe lesquelles)
     */
-    public List<Card> findFlush(HandData hand) {
+    private List<Card> findFlush(HandData hand) {
         List<CardColor> flushValue = findKeysWithCount(hand.getCountCardColors(), 5);
 
         if (flushValue.size() == 1) {
@@ -289,7 +289,7 @@ public class PokerEngine {
     /* Une combinaison est une quinte flush si c'est une quinte (les 5 cartes se suivent)
      * ET que CES 5 cartes sont toutes de la même couleur (pas seulement 5 cartes de la main)
      */
-    public List<Card> findQuinteFlush(HandData hand) {
+    private List<Card> findQuinteFlush(HandData hand) {
         List<Card> quinteCards = findQuinte(hand);
         if (quinteCards == null) return null;
 
@@ -308,7 +308,7 @@ public class PokerEngine {
     /* Evalue une main en positionannt le type de combinaison (ex: QUINTE_FLUSH)
      * et en donnant les meilleurs 5 cartes (pour les égalités et l'évaluation du score)
     */
-    public void evaluateHand(HandData hand) {
+    private void evaluateHand(HandData hand) {
         List<Card> best;
         List<Function<HandData, List<Card>>> evaluators = Arrays.asList(
             this::findQuinteFlush,
@@ -349,7 +349,7 @@ public class PokerEngine {
 
     /* Evalue la main d'un seul joueur en fonction des cartes présentes sur la table
      */
-    public HandData evaluateSinglePlayer(PlayerSession player, List<Card> community) {
+    private HandData evaluateSinglePlayer(PlayerSession player, List<Card> community) {
         List<Card> sortedCards = sortCards(player, community);
         HashMap<CardValue, Integer> cardValues = countCardValues(sortedCards);
         HashMap<CardColor, Integer> cardColors = countCardColors(sortedCards);
@@ -363,7 +363,7 @@ public class PokerEngine {
 
     /* Compare les valeurs des cartes en cas d'égalité
      */
-    public int compareTieBreak(HandData h1, HandData h2) {
+    private int compareTieBreak(HandData h1, HandData h2) {
         List<Card> h1List = h1.getBestFiveCards();
         List<Card> h2List = h2.getBestFiveCards();
 
@@ -387,7 +387,7 @@ public class PokerEngine {
     /* Compare les mains de deux joueurs,
      * en regardant d'abord la combinaison puis les valeurs des cartes
     */
-    public int compareHands(HandData h1, HandData h2) {
+    private int compareHands(HandData h1, HandData h2) {
         int h1Score = h1.getType().getScore();
         int h2Score = h2.getType().getScore();
         if (h1Score < h2Score) {
@@ -400,7 +400,7 @@ public class PokerEngine {
     }
 
 
-    List<PlayerSession> determineWinners(List<PlayerSession> players, List<Card> communityCards) {
+    public List<PlayerSession> determineWinners(List<PlayerSession> players, List<Card> communityCards) {
         if (players == null || players.isEmpty()) return null;
 
         int i;
@@ -694,22 +694,8 @@ public class PokerEngine {
     }
 
 
-    /* Gère une action envoyée par un joueur, nécessité de vérifier sa légalité
-     * Normalement, on a pas besoin de vérifier qu'un joueur est couché ou all-in
-     * car il passera son tour selon l'algo de findNextPlayer.
-     * Autrement dit, un joueur entre dans processAction s'il n'a pas encore joué,
-     * ou que sa dernière action est CALL, RAISE ou CHECK.
-     * De même, si un joueur clique sur le bouton pour CALL en dehors de son tour tandis qu'il
-     * est all-in, la ligne vérifiant l'ID renverra false (son action sera ignorée)
-     */
-    public boolean processAction(Table table, Action action) {
-        GameHand gameHand = table.getGameHand();
-
-        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) return false;
-
-        PlayerSession player = table.getActivePlayers().get(gameHand.getCurrentTurnIndex());
-
-        // isLegal reste à false vraiment si le coup n'est pas autorisé (ex: jetons insuffisants)
+    /* Fonction utilitaire pour processAction */
+    private boolean handleAction(Table table, Action action, PlayerSession player) {
         boolean isLegal = false;
 
         switch(action.getActionType()) {
@@ -729,6 +715,29 @@ public class PokerEngine {
                 isLegal = handleAllIn(table, action, player);
                 break;
         }
+
+        return isLegal;
+    }
+
+
+    /* Gère une action envoyée par un joueur, nécessité de vérifier sa légalité
+     * Normalement, on a pas besoin de vérifier qu'un joueur est couché ou all-in
+     * car il passera son tour selon l'algo de findNextPlayer.
+     * Autrement dit, un joueur entre dans processAction s'il n'a pas encore joué,
+     * ou que sa dernière action est CALL, RAISE ou CHECK.
+     * De même, si un joueur clique sur le bouton pour CALL en dehors de son tour tandis qu'il
+     * est all-in, la ligne vérifiant l'ID renverra false (son action sera ignorée)
+     */
+    public boolean processAction(Table table, Action action) {
+        GameHand gameHand = table.getGameHand();
+
+        // Le joueur n'est pas autorisé à jouer si ce n'est pas son tour
+        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) return false;
+
+        PlayerSession player = table.getActivePlayers().get(gameHand.getCurrentTurnIndex());
+
+        // isLegal reste à false vraiment si le coup n'est pas autorisé (ex: jetons insuffisants)
+        boolean isLegal = handleAction(table, action, player);
 
         if (!isLegal) return false;
         player.setHasActed(true);
