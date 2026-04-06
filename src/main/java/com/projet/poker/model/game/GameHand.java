@@ -12,24 +12,29 @@ public class GameHand {
      * (au début de laquelle on redistribue les cartes, et à la fin de laquelle on détermine le gagnant)
      */
     
-    private Long id;
-    private Long tableId;
+    private long id;
+    private long tableId;
+    private Date startTime;
+
+    private double smallBlindAmount;
+    private double bigBlindAmount;
     private double potAmount;
+    private int currentTurnIndex;
+    private double highestBet;
     private Deck deck;
     private List<Card> communityCards;
-    private Date startTime;
-    private int currentTurnIndex;
     private PlayerSession dealerButton;
-    private double highestBet;
+    private PlayerSession smallBlindPlayer;
+    private PlayerSession bigBlindPlayer;
 
     public GameHand() {
         this.deck = new Deck();
         this.communityCards = new ArrayList<>();
     }
 
-    public GameHand(Long id, Long tableId, double potAmount, PlayerSession dealerButton) {
-        this.id = id;
-        this.tableId = tableId;
+    public GameHand(double potAmount, PlayerSession dealerButton) {
+        this.id = 0;
+        this.tableId = 0;
         this.potAmount = potAmount;
         this.communityCards = new ArrayList<>();
         this.deck = new Deck();
@@ -66,8 +71,44 @@ public class GameHand {
         this.highestBet = highestBet;
     }
 
+    public void setDealerButton(PlayerSession dealerButton) {
+        this.dealerButton = dealerButton;
+    }
+
+    public void setBigBlindPlayer(PlayerSession bigBlindPlayer) {
+        this.bigBlindPlayer = bigBlindPlayer;
+    }
+
+    public void setSmallBlindPlayer(PlayerSession smallBlindPlayer) {
+        this.smallBlindPlayer = smallBlindPlayer;
+    }
+
+    public void setSmallBlindAmount(double smallBlindAmount) {
+        this.smallBlindAmount = smallBlindAmount;
+    }
+
+    public void setBigBlindAmount(double bigBlindAmount) {
+        this.bigBlindAmount = bigBlindAmount;
+    }
+
     public void addToPot(double amount) {
         potAmount += amount;
+    }
+
+    public PlayerSession getBigBlindPlayer() {
+        return bigBlindPlayer;
+    }
+
+    public PlayerSession getSmallBlindPlayer() {
+        return smallBlindPlayer;
+    }
+
+    public double getBigBlindAmount() {
+        return bigBlindAmount;
+    }
+
+    public double getSmallBlindAmount() {
+        return smallBlindAmount;
     }
 
     public int getCurrentTurnIndex() {

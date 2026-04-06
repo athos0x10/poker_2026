@@ -8,8 +8,22 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Scanner;
 import java.util.function.Function;
 
+import main.java.com.projet.poker.engine.commands.CheatCommand;
+import main.java.com.projet.poker.engine.commands.GameHandCommand;
+import main.java.com.projet.poker.engine.commands.HelpCommand;
+import main.java.com.projet.poker.engine.commands.HighestBetCommand;
+import main.java.com.projet.poker.engine.commands.MeCommand;
+import main.java.com.projet.poker.engine.commands.PlayerBetCommand;
+import main.java.com.projet.poker.engine.commands.PlayerInfoCommand;
+import main.java.com.projet.poker.engine.commands.PlayerStackCommand;
+import main.java.com.projet.poker.engine.commands.PotCommand;
+import main.java.com.projet.poker.engine.commands.TableCommand;
+import main.java.com.projet.poker.engine.commands.WinnersCommand;
+import main.java.com.projet.poker.engine.logger.ConsoleGameLogger;
+import main.java.com.projet.poker.engine.logger.GameLogger;
 import main.java.com.projet.poker.model.game.Action;
 import main.java.com.projet.poker.model.game.GameHand;
 import main.java.com.projet.poker.model.game.PlayerSession;
@@ -23,8 +37,41 @@ public class PokerEngine {
      */
 
     private static final int MAX_HAND = 5;
+    private GameLogger logger;
+    private CommandRegistry registry;
 
-    public PokerEngine() {}
+
+    public PokerEngine() {
+        this.logger = new ConsoleGameLogger();
+        this.registry = new CommandRegistry();
+
+        registry.registerCommand(new HelpCommand());
+        registry.registerCommand(new TableCommand());
+        registry.registerCommand(new GameHandCommand());
+        registry.registerCommand(new MeCommand());
+        registry.registerCommand(new CheatCommand());
+        registry.registerCommand(new PlayerInfoCommand());
+        registry.registerCommand(new PotCommand());
+        registry.registerCommand(new PlayerStackCommand());
+        registry.registerCommand(new PlayerBetCommand());
+        registry.registerCommand(new WinnersCommand());
+        registry.registerCommand(new HighestBetCommand());
+    }
+
+
+    public void executeSystemCommand(Table table, String input) {
+        registry.dispatch(input, table, this);
+    }
+
+    
+    public GameLogger getLogger() {
+        return logger;
+    }
+
+    
+    public CommandRegistry getRegistry() {
+        return registry;
+    }
 
 
 
@@ -312,25 +359,13 @@ public class PokerEngine {
     private void evaluateHand(HandData hand) {
         List<Card> best;
         List<Function<HandData, List<Card>>> evaluators = Arrays.asList(
-            this::findQuinteFlush,
-            this::findCarre, 
-            this::findFull, 
-            this::findFlush, 
-            this::findQuinte,
-            this::findBrelan,
-            this::findDoublePaire, 
-            this::findPaire
+            this::findQuinteFlush, this::findCarre, this::findFull, this::findFlush, 
+            this::findQuinte, this::findBrelan, this::findDoublePaire, this::findPaire
         );
 
         List<HandType> types = Arrays.asList(
-            HandType.QUINTE_FLUSH,
-            HandType.CARRE,
-            HandType.FULL,
-            HandType.FLUSH,
-            HandType.QUINTE,
-            HandType.BRELAN,
-            HandType.DOUBLE_PAIRE,
-            HandType.PAIRE
+            HandType.QUINTE_FLUSH, HandType.CARRE, HandType.FULL, HandType.FLUSH,
+            HandType.QUINTE, HandType.BRELAN, HandType.DOUBLE_PAIRE, HandType.PAIRE
         );
 
         for (int i = 0; i < evaluators.size(); i++) {
@@ -588,10 +623,14 @@ public class PokerEngine {
         // Récupère les joueurs
         PlayerSession sbPlayer = activePlayers.get(smallBlindIdx);
         PlayerSession bbPlayer = activePlayers.get(bigBlindIdx);
+        gameHand.setSmallBlindPlayer(sbPlayer);
+        gameHand.setBigBlindPlayer(bbPlayer);
 
         // Définit les montants
         double smallBlind = table.getMinBet() / 2;
         double bigBlind = table.getMinBet();
+        gameHand.setSmallBlindAmount(smallBlind);
+        gameHand.setBigBlindAmount(bigBlind);
 
         // Retire les mises
         sbPlayer.bet(smallBlind);
@@ -607,16 +646,15 @@ public class PokerEngine {
     * distribution des cartes, collecte de la blind, désignation du dealer, etc.
     */
     public void startNewHand(Table table) {
+        // Remise à 0 du pot, ramassage des cartes, ...
+        clearTable(table);
+
         // Changer le GameState de la table en PRE_FLOP.
-        if (!table.getGameState().equals(GameState.WAITING_FOR_PLAYERS)) return;
         table.setGameState(GameState.PRE_FLOP);
 
-        // Mélanger le deck.
         GameHand gameHand = table.getGameHand();
+        gameHand.setDealerButton(table.getActivePlayers().get(0));
         gameHand.shuffleDeck();
-
-        // Mettre le potAmount à 0.
-        gameHand.setPotAmount(0);
 
         // Retirer les "Blindes" (Petite et Grosse blinde) aux deux premiers joueurs et les mettre dans le pot.
         collectBlinds(table);
@@ -627,7 +665,9 @@ public class PokerEngine {
         // Mettre le currentTurnIndex sur le 3ème joueur (celui après la Grosse Blinde).
         List<PlayerSession> activePlayers = table.getActivePlayers();
         int dealerIdx = activePlayers.indexOf(gameHand.getDealerButton());
-        gameHand.setCurrentTurnIndex(getNextPlayerIdx(getNextPlayerIdx(dealerIdx, activePlayers.size()), activePlayers.size()));
+        gameHand.setCurrentTurnIndex(
+            getNextPlayerIdx(getNextPlayerIdx(getNextPlayerIdx(dealerIdx, activePlayers.size()), activePlayers.size()), activePlayers.size())
+        );
     }
 
 
@@ -774,10 +814,25 @@ public class PokerEngine {
     private void distributeCards(Table table) {
         switch (table.getGameState()) {
             case GameState.FLOP: dealFlop(table); break;
-            case GameState.TURN: dealFlop(table); break;
-            case GameState.RIVER: dealFlop(table); break;
-            case GameState.SHOWDOWN: evaluateShowdown(table); return;
+            case GameState.TURN: dealTurn(table); break;
+            case GameState.RIVER: dealRiver(table); break;
             default: break;
+        }
+    }
+
+
+    /* Gère le début normal d'une nouvelle manche:
+     * - Plusieurs joueurs peuvent encore miser
+     * - Il n'y a pas eu que des tapis
+     * On vérifie si en changeant de manche, on arrive naturellement à la fin de la partie (de la main = SHOWDOWN),
+     * Ou bien si on continue normalement: nouvelle(s) carte(s) et tour de parole
+    */
+    private void handleNextRound(Table table) {
+        if (table.getGameState() == GameState.SHOWDOWN) {
+            evaluateShowdown(table);
+        } else {
+            distributeCards(table);
+            updateGameState(table);
         }
     }
 
@@ -786,28 +841,26 @@ public class PokerEngine {
      * - S'il n'y a qu'un survivor (voir la méthod utilitaire plus haut), on lui donne le pot
      * - Si 0 ou 1 joueur peut encore miser (avec plusieurs survivant ayant ALL-IN), on déroule les cartes
      * - Sinon, on continue normalement
+     * Méthode à modifier plus tard pour les multi-pots
     */ 
     private void handleRoundEnding(Table table) {
         List<PlayerSession> survivors = countSurvivors(table);
         List<PlayerSession> activeBettors = countActiveBettors(table);
 
         if (survivors.size() == 1) {
-            // Fin de la manche
-            table.setGameState(GameState.WAITING_FOR_PLAYERS);
-
             // Le gagant remporte le pot
             PlayerSession winner = survivors.getFirst();
+            table.setWinners(Arrays.asList(winner));
+
             winner.deposit(table.getGameHand().getPotAmount());
-            // On nettoie pour la prochaine manche
-            clearTable(table);
+            table.setGameState(GameState.SHOWDOWN);
 
         } else if (activeBettors.size() <= 1 && survivors.size() > 1) {
             runTheBoard(table);
 
         } else {
             goNextState(table);
-            distributeCards(table);
-            updateGameState(table);
+            handleNextRound(table);
         }
     }
 
@@ -857,7 +910,8 @@ public class PokerEngine {
             winner.deposit(winnersGain);
         }
 
-        clearTable(table);
+        table.setWinners(winners);
+        table.setGameState(GameState.SHOWDOWN);
 
         return winners;
     }
@@ -896,25 +950,81 @@ public class PokerEngine {
     }
 
 
+    
     /*======================================================================================
-     *======================================== MAIN ========================================
-     ======================================================================================= */
+    *========================================= MAIN ========================================
+    ======================================================================================= */
 
-    public static void main(String[] args) {
-        Table table = new Table();
-        PokerEngine engine = new PokerEngine();
 
-        for (int i = 0; i < 5; i++) table.addPlayer(new PlayerSession(i));
+    /* Parse une action */
+    private Action parseGameAction(String input, Table table) {
+        String[] parts = input.split("\\s+");
+        String typeStr = parts[0].toUpperCase();
+        double amount = (parts.length > 1) ? Double.parseDouble(parts[1]) : 0;
+        
+        int currentIndex = table.getGameHand().getCurrentTurnIndex();
+        
+        return new Action(ActionType.valueOf(typeStr), currentIndex, amount);
+    }
 
-        engine.startNewHand(table);
-        engine.dealFlop(table);
-        engine.dealTurn(table);
-        engine.dealRiver(table);
 
-        List<PlayerSession> winners = engine.evaluateShowdown(table);
+    /* Attend une action d'un joueur (en vrai, ce sera une requête du front end) */
+    public void waitForRequest(Table table, Scanner scanner) {
+        boolean actionValidated = false;
+    
+        while (!actionValidated) {
+            logger.logInfo("Attente d'une commande (tapez /help pour la liste)...\n");
 
-        for (PlayerSession p : winners) {
-            System.out.println(p);
+            String input = scanner.nextLine().trim();
+
+            if (input.isEmpty()) {
+                logger.logError("Aucune commande saisie. Veuillez réessayer.");
+                continue;
+            }
+
+            if (input.startsWith("/")) {
+                registry.dispatch(input, table, this);
+
+            } else {
+                try {
+                    Action action = parseGameAction(input, table);
+                    
+                    if (processAction(table, action)) {
+                        actionValidated = true;
+                    } else {
+                        logger.logError("Action invalide. Veuillez réessayer.");
+                    }
+                } catch (Exception e) {
+                    logger.logError("Commande inconnue. Tapez /help pour voir les options");
+                }
+            }
         }
+    }
+
+
+    /* Test rapidement une partie à 3 joueurs
+     * Fonction à reprendre dans la logique pour gérer une vraie partie asynchrone
+     * côté front end
+     */
+    public void start() {
+        Table table = new Table(0, "Table1", 10 , 3);
+        Scanner scanner = new Scanner(System.in);
+
+        
+        for (int i = 0; i < table.getMaxPlayers(); i++) {
+            table.addPlayer(new PlayerSession(i, 200, i));
+        }
+
+        startNewHand(table);
+
+        while (table.getGameState() != GameState.SHOWDOWN) {
+            logger.logAllInfos(table);
+            waitForRequest(table, scanner);
+        }
+
+        logger.logPlayerHands(table);
+        logger.logWinners(table);
+
+        scanner.close();
     }
 }

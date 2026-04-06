@@ -5,17 +5,18 @@ import java.util.Date;
 import main.java.com.projet.poker.engine.ActionType;
 
 public class Action {
+    
+    private long handId;
 
-    private Long id;
-    private Long handId;
-    private Long playerId;
+    private long id;
+    private long playerId;
     private ActionType actionType;
     private double amount;
     Date timestamp;
     
-    public Action(Long id, Long handId, Long playerId, ActionType actionType, double amount) {
-        this.id = id;
-        this.handId = handId;
+    public Action(ActionType actionType, long playerId, double amount) {
+        this.id = 0;
+        this.handId = 0;
         this.playerId = playerId;
         this.actionType = actionType;
         this.amount = amount;
@@ -26,7 +27,7 @@ public class Action {
         return actionType;
     }
 
-    public Long getPlayerId() {
+    public long getPlayerId() {
         return playerId;
     }
 
@@ -34,7 +35,7 @@ public class Action {
         return amount;
     }
 
-    public Long getId() {
+    public long getId() {
         return id;
     }
 }

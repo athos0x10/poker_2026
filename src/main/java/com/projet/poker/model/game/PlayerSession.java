@@ -7,9 +7,10 @@ import main.java.com.projet.poker.engine.Card;
 
 public class PlayerSession {
     
-    private long id;
     private long tableId;
     private long userId;
+
+    private long id;
     private int seatNumber;
 
     // Cartes en main
@@ -33,10 +34,10 @@ public class PlayerSession {
 
     }
 
-    public PlayerSession(long id, long talbleId, long userId, double currentStack, int seatNumber) {
+    public PlayerSession(long id, double currentStack, int seatNumber) {
         this.id = id;
-        this.tableId = talbleId;
-        this.userId = userId;
+        this.tableId = 0;
+        this.userId = 0;
         this.currentStack = currentStack;
         this.seatNumber = seatNumber;
         this.hasFolded = false;
@@ -53,7 +54,7 @@ public class PlayerSession {
     }
     
     public void withdraw(double amount) {
-        currentStack = Math.min(0, currentStack - amount);
+        currentStack = Math.max(0, currentStack - amount);
     }
 
     public void deposit(double amount) {
@@ -93,6 +94,10 @@ public class PlayerSession {
         return id;
     }
 
+    public int getSeatNumber() {
+        return seatNumber;
+    }
+
     public void setAllIn(boolean isAllIn) {
         this.isAllIn = isAllIn;
     }
@@ -105,29 +110,8 @@ public class PlayerSession {
         this.hasFolded = hasFolded;
     }
 
-    
-    public String displayHoleCards() {
-        StringBuilder s = new StringBuilder();
-
-        for (Card c : holeCards) {
-            s.append(c.toString() + " ");
-        }
-
-        return s.toString();
-    }
-
     @Override
     public String toString() {
-        return "PlayerSession{" +
-                "id=" + id +
-                ", tableId=" + tableId +
-                ", userId=" + userId +
-                ", currentStack=" + currentStack +
-                ", seatNumber=" + seatNumber +
-                ", holeCards=" + displayHoleCards() +
-                ", hasFolded=" + hasFolded +
-                ", isAllIn=" + isAllIn +
-                ", betInCurrentRound=" + betInCurrentRound +
-                '}';
+        return "Player " + id + " (Seat " + seatNumber + ", Stack: " + currentStack + ")";
     }
 }
