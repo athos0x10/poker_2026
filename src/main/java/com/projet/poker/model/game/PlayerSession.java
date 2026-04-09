@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import main.java.com.projet.poker.engine.Card;
+import main.java.com.projet.poker.engine.HandType;
 
 public class PlayerSession {
+
+    /* Un joueur (identifié dans le jeu, côté serveur) */
     
     private long tableId;
     private long userId;
@@ -24,6 +27,8 @@ public class PlayerSession {
     private boolean isAllIn;
     // Le joueur à joué dans le tour (qu'il ait suivi, relancé ou checké)
     private boolean hasActed;
+
+    private HandType finalHand;
 
     // Mise sur le tour courant
     private double betInCurrentRound;
@@ -78,6 +83,10 @@ public class PlayerSession {
         return hasActed;
     }
 
+    public HandType getFinalHand() {
+        return finalHand;
+    }
+
     public double getBetInCurrentRound() {
         return betInCurrentRound;
     }
@@ -96,6 +105,10 @@ public class PlayerSession {
 
     public int getSeatNumber() {
         return seatNumber;
+    }
+
+    public void setFinalHand(HandType finalHand) {
+        this.finalHand = finalHand;
     }
 
     public void setAllIn(boolean isAllIn) {

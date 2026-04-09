@@ -20,6 +20,6 @@ public class HelpCommand extends BaseCommand {
         engine.getLogger().logInfo("CHECK : Checker");
         engine.getLogger().logInfo("CALL : Suivre");
         engine.getLogger().logInfo("RAISE <amount> : Relancer AU montant spécifié");
-        engine.getLogger().logInfo("ALL-IN : Miser tous ses jetons");
+        engine.getLogger().logInfo("ALLIN : Miser tous ses jetons");
     }
 }

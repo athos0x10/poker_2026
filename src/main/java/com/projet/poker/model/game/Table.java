@@ -1,4 +1,4 @@
-package main.java.com.projet.poker.model.game;
+﻿package main.java.com.projet.poker.model.game;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,11 +12,17 @@ public class Table {
 
     private long id;
     private String name;
+    // Mise minimum pour la grosse blinde (par défaut, petite blinde = grosse blinde / 2
     private double minBet;
+    // Nombre max de joueurs
     private int maxPlayers;
+
+    // Etat du jeu
     private GameState gameState;
     private List<PlayerSession> activePlayers;
+    // Gagnants de la partie, il peut y en avoir plusieurs si égalité, None en cours de partie
     private List<PlayerSession> winners;
+    // Informations sur la main globale 
     private GameHand gameHand;
 
     public Table() {

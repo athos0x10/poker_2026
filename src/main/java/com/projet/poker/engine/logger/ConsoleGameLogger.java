@@ -56,6 +56,9 @@ public class ConsoleGameLogger implements GameLogger {
         System.out.println("Has Folded: " + player.hasFolded());
         System.out.println("Is All-In: " + player.isAllIn());
         System.out.println("Bet in Current Round: " + player.getBetInCurrentRound());
+        System.out.print("Hole cards : ") ;
+        logPlayerHoleCards(player);
+        System.out.println();
     }
 
     @Override
@@ -77,7 +80,7 @@ public class ConsoleGameLogger implements GameLogger {
     public void logWinners(Table table) {
         System.out.println("Winners:");
         for (PlayerSession winner : table.getWinners()) {
-            System.out.println("Player " + winner.getId() + " with hand: ");
+            System.out.println("Player " + winner.getId() + " with hand (" + winner.getFinalHand() + "): ");
             logPlayerHoleCards(winner);
         }
     }

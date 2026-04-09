@@ -11,17 +11,7 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.function.Function;
 
-import main.java.com.projet.poker.engine.commands.CheatCommand;
-import main.java.com.projet.poker.engine.commands.GameHandCommand;
-import main.java.com.projet.poker.engine.commands.HelpCommand;
-import main.java.com.projet.poker.engine.commands.HighestBetCommand;
-import main.java.com.projet.poker.engine.commands.MeCommand;
-import main.java.com.projet.poker.engine.commands.PlayerBetCommand;
-import main.java.com.projet.poker.engine.commands.PlayerInfoCommand;
-import main.java.com.projet.poker.engine.commands.PlayerStackCommand;
-import main.java.com.projet.poker.engine.commands.PotCommand;
-import main.java.com.projet.poker.engine.commands.TableCommand;
-import main.java.com.projet.poker.engine.commands.WinnersCommand;
+import main.java.com.projet.poker.engine.commands.*;
 import main.java.com.projet.poker.engine.logger.ConsoleGameLogger;
 import main.java.com.projet.poker.engine.logger.GameLogger;
 import main.java.com.projet.poker.model.game.Action;
@@ -439,13 +429,15 @@ public class PokerEngine {
     public List<PlayerSession> determineWinners(List<PlayerSession> players, List<Card> communityCards) {
         if (players == null || players.isEmpty()) return null;
 
-        int i;
         List<PlayerSession> winners = new ArrayList<>();
 
         // Map pour stocker les mains des joueurs
         HashMap<PlayerSession, HandData> playerHands = new HashMap<>();
         for (PlayerSession p : players) {
-            playerHands.put(p, evaluateSinglePlayer(p, communityCards));
+            HandData hand = evaluateSinglePlayer(p, communityCards);
+            p.setFinalHand(hand.getType());
+            playerHands.put(p, hand);
+
         }
 
         // Gagnant temporaire
@@ -453,7 +445,7 @@ public class PokerEngine {
         winners.add(currentWinner);
         HandData winningHand = playerHands.get(currentWinner);
 
-        for (i = 1; i < players.size(); i++) {
+        for (int i = 1; i < players.size(); i++) {
             PlayerSession candidate = players.get(i);
             HandData candidateHand = playerHands.get(candidate);
 
@@ -781,7 +773,7 @@ public class PokerEngine {
             case ActionType.RAISE:
                 isLegal = handleRaise(table, action, player);
                 break;
-            case ActionType.ALL_IN:
+            case ActionType.ALLIN:
                 isLegal = handleAllIn(table, action, player);
                 break;
         }

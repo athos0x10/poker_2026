@@ -8,5 +8,5 @@ public enum ActionType {
     CHECK,
     CALL,
     RAISE,
-    ALL_IN;
+    ALLIN;
 }
