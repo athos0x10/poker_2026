@@ -57,6 +57,15 @@ public class UtilisateurService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
     }
 
+
+    /**
+     * Récupère un utilisateur par son login
+     */
+    public Utilisateur trouverParLogin(String login) {
+        return utilisateurRepository.findByLogin(login)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+    }
+
     /**
      * Récupère la liste des amis confirmés d'un utilisateur
      */
