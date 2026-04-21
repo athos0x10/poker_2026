@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Document</title>
+</head>
+<body>
+    <div id="main_container">
+        <div class="table_container">
+            <div class="table_form"></div>
+            <div class="table_content">
+                <div id="center">
+                    <div id="board">
+                        <div id="board_place_0" class="board_place"></div>
+                        <div id="board_place_1" class="board_place"></div>
+                        <div id="board_place_2" class="board_place"></div>
+                        <div id="board_place_3" class="board_place"></div>
+                        <div id="board_place_4" class="board_place"></div>
+                    </div>
+
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div id="total_pot" class="pot">0</div>
+                    </div>
+                </div>
+
+                <div id="my_cards"></div>
+
+                <div id="my_place" class="player_place">
+                    <div id="my_icon" class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot">0</div>
+                    </div>
+                </div>
+
+                <div id="player_place_1" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+                <div id="player_place_2" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+                <div id="player_place_3" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+                <div id="player_place_4" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+                <div id="player_place_5" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+                <div id="player_place_6" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+                <div id="player_place_7" class="player_place invisible">
+                    <div class="player_icon"></div>
+                    <div class="pot_container">
+                        <div class="pot_icon"></div>
+                        <div class="pot"></div>
+                    </div>
+                </div>
+
+                <div id="player_cards_1" class="player_cards invisible"></div>
+                <div id="player_cards_2" class="player_cards invisible"></div>
+                <div id="player_cards_3" class="player_cards invisible"></div>
+                <div id="player_cards_4" class="player_cards invisible"></div>
+                <div id="player_cards_5" class="player_cards invisible"></div>
+                <div id="player_cards_6" class="player_cards invisible"></div>
+                <div id="player_cards_7" class="player_cards invisible"></div>
+            </div>
+        </div>
+
+        <div id="buttons">
+            <div id="fold_button" class="button" onclick="fold()">fold</div>
+            <div id="check_button" class="button" onclick="check()">check</div>
+            <div id="call_button" class="button invisible" onclick="call()">call</div>
+            <div id="check_raise_button" class="button">raise</div>
+        </div>
+    </div>
+
+
+    <script src="script/tools.js"></script>
+    <script src="script/cards.js"></script>
+    <script src="script/player.js"></script>
+    <script src="script/game.js"></script>
+    <script src="script/display.js"></script>
+    <script>
+        let me;
+        let p1;
+        let p2;
+        let middle_cards = [];
+        function init() {
+            me = new Player(id="payer_0", 1000, is_me=true);
+            p1 = new Player(id="player_1", 1000);
+            p2 = new Player(id="player_2", 1000);
+            me.setPosition(0);
+            p1.setPosition(3);
+            p2.setPosition(5);
+            
+            c1 = new Card(Rank.ACE, Suit.SPADES);
+            c2 = new Card(Rank.TWO, Suit.HEARTS);
+            c3 = new Card();
+            c4 = new Card();
+            c5 = new Card();
+            c6 = new Card();
+
+            me.setCards([c1, c2]);
+            p1.setCards([c3, c4]);
+            p2.setCards([c5, c6]);
+
+            display_player(p1);
+            display_player(p2);
+        }
+        function show_cards() {
+            display_player_cards(me);
+            display_player_cards(p1);
+            display_player_cards(p2);
+        }
+
+        function add_middle_card(card) {
+            middle_cards.push(card);
+            display_board(middle_cards);
+        }
+
+        init();
+        show_cards();
+
+        let c = new Card(Rank.ACE, Suit.SPADES);
+
+    </script>
+
+</body>
+</html>
