@@ -1,10 +1,10 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.model.game.Table;
 
 public class CommandRegistry {
     private final Map<String, BaseCommand> commands = new HashMap<>();

@@ -1,4 +1,4 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,4 +90,3 @@ public class Deck {
         return s.toString();
     }
 }
-

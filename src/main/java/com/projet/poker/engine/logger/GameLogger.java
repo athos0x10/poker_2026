@@ -1,7 +1,7 @@
-package main.java.com.projet.poker.engine.logger;
+package com.projet.poker.engine.logger;
 
-import main.java.com.projet.poker.model.game.PlayerSession;
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.model.game.PlayerSession;
+import com.projet.poker.model.game.Table;
 
 public interface GameLogger {
     void logInfo(String message);

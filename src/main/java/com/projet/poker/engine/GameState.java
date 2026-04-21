@@ -1,4 +1,4 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
 public enum GameState {
     /* L'état du jeu */

@@ -1,9 +1,9 @@
-﻿package main.java.com.projet.poker.model.game;
+﻿package com.projet.poker.model.game;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import main.java.com.projet.poker.engine.GameState;
+import com.projet.poker.engine.GameState;
 
 public class Table {
     /* Classe principale de gestion d'une partie de poker

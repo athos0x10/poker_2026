@@ -1,7 +1,7 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
-import main.java.com.projet.poker.model.game.PlayerSession;
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.model.game.PlayerSession;
+import com.projet.poker.model.game.Table;
 
 public class Main {
 

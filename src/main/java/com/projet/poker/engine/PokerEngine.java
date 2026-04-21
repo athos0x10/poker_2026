@@ -1,4 +1,4 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,13 +11,13 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.function.Function;
 
-import main.java.com.projet.poker.engine.commands.*;
-import main.java.com.projet.poker.engine.logger.ConsoleGameLogger;
-import main.java.com.projet.poker.engine.logger.GameLogger;
-import main.java.com.projet.poker.model.game.Action;
-import main.java.com.projet.poker.model.game.GameHand;
-import main.java.com.projet.poker.model.game.PlayerSession;
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.engine.commands.*;
+import com.projet.poker.engine.logger.ConsoleGameLogger;
+import com.projet.poker.engine.logger.GameLogger;
+import com.projet.poker.model.game.Action;
+import com.projet.poker.model.game.GameHand;
+import com.projet.poker.model.game.PlayerSession;
+import com.projet.poker.model.game.Table;
 
 public class PokerEngine {
 
@@ -116,10 +116,10 @@ public class PokerEngine {
      * {Roi, Roi, Roi, Dame, 10, 10 10, 9, ...}
      * ce qui renverra {Roi, 10} (en valeurs = 13, 10)
     */
-    private <T extends Comparable<? super T>> List<T> findKeysWithCount(Map<T, Integer> countMap, Integer targetCount) {
-        List<T> matchingKeys = new ArrayList<>();
+    private List<CardValue> findKeysWithCount(HandData hand, Integer targetCount) {
+        List<CardValue> matchingKeys = new ArrayList<>();
 
-        for (Map.Entry<T, Integer> entry : countMap.entrySet()) {
+        for (Map.Entry<CardValue, Integer> entry : hand.getCountCardValues().entrySet()) {
             if (Objects.equals(entry.getValue(), targetCount)) {
                 matchingKeys.add(entry.getKey());
             }
@@ -177,7 +177,7 @@ public class PokerEngine {
     /* Une combinaison est un carré si elle possède 4 cartes de la même valeur */
     private List<Card> findCarre(HandData hand) {
         // renvoie toutes les occurences de 4 (il ne peut en avoir qu'une seule ou 0)
-        List<CardValue> carreValues = findKeysWithCount(hand.getCountCardValues(), 4); 
+        List<CardValue> carreValues = findKeysWithCount(hand, 4); 
 
         if (carreValues.size() == 1) {
             List<Card> sorted = hand.getSortedCards();
@@ -195,9 +195,9 @@ public class PokerEngine {
     */
     private List<Card> findFull(HandData hand) {
         // On cherche les occurences de 3, il peut y en avoir 0, 1 ou 2
-        List<CardValue> fullValues = findKeysWithCount(hand.getCountCardValues(), 3);
+        List<CardValue> fullValues = findKeysWithCount(hand, 3);
         // S'il n'y a qu'une fois 3 carte, il faut vérifier s'il n'existe pas une paire pour former le full
-        if (fullValues.size() < 2) fullValues.addAll(findKeysWithCount(hand.getCountCardValues(), 2));
+        if (fullValues.size() < 2) fullValues.addAll(findKeysWithCount(hand, 2));
 
         // Il est possible qu'il y ait plusieurs paires, mais on ne doit garder que 2 types de cartes
         if (fullValues.size() >= 2) fullValues = new ArrayList<>(fullValues.subList(0, 2));
@@ -227,24 +227,24 @@ public class PokerEngine {
         // Il faut supprimer les doublons pour ne pas biaiser le compteur
         LinkedHashSet<Card> set = new LinkedHashSet<>(hand.getSortedCards());
         // On recréé la liste triée sans les doublons
-        List<Card> cards = new ArrayList<>();
-        cards.addAll(set);
+        List<Card> cards = new ArrayList<>(set);
 
-        int i, count = 0;
+        int count = 0;
+        int endIndex = 0;
 
         // Rappel: cards est triée par ordre décroissant (AS, ROI, DAME, ..., 2)
-        for (i = 0; i < cards.size() - 1; i++) {
+        for (int i = 0; i < cards.size() - 1; i++) {
             if (cards.get(i).getCardValue().getValue() == 
                 (cards.get(i + 1).getCardValue().getValue() + 1)) {
-                 count++;   
+                count++;
+                if (count >= 4) endIndex = i + 1;
             } else {
                 count = 0;
             }
         }
 
-        if (count >= 5) {
-            // Les 5 cartes se suivent
-            return new ArrayList<>(cards.subList(i - 4, i + 1));
+        if (count >= 4) {
+            return new ArrayList<>(cards.subList(endIndex - 4, endIndex + 1));
         }
 
         // On test le cas particulier
@@ -263,7 +263,7 @@ public class PokerEngine {
      */
     private List<Card> findBrelan(HandData hand) {
         // Renvoi les cartes qui apparaissent 3 fois, il y en a de 0 ou 1 type car le full est déjà traité
-        List<CardValue> brelanValues = findKeysWithCount(hand.getCountCardValues(), 3);
+        List<CardValue> brelanValues = findKeysWithCount(hand, 3);
 
         if (brelanValues.size() == 1) {
             List<Card> sorted = hand.getSortedCards();
@@ -279,7 +279,7 @@ public class PokerEngine {
     /* Une combinaison est une paire double si elle possède aux moins deux paires
     */
     private List<Card> findDoublePaire(HandData hand) {
-        List<CardValue> pairValues = findKeysWithCount(hand.getCountCardValues(), 2);
+        List<CardValue> pairValues = findKeysWithCount(hand, 2);
 
         if (pairValues.size() >= 2) {
             // On ne garde que les deux meilleurs paires
@@ -298,7 +298,7 @@ public class PokerEngine {
      * (la double paire est traitée avant)
      */
     private List<Card> findPaire(HandData hand) {
-        List<CardValue> pairValue = findKeysWithCount(hand.getCountCardValues(), 2);
+        List<CardValue> pairValue = findKeysWithCount(hand, 2);
 
         if (pairValue.size() == 1) {
             List<Card> best = extractCards(hand.getSortedCards(), pairValue, Card::getCardValue);
@@ -314,12 +314,12 @@ public class PokerEngine {
      * (n'importe lesquelles)
     */
     private List<Card> findFlush(HandData hand) {
-        List<CardColor> flushValue = findKeysWithCount(hand.getCountCardColors(), 5);
-
-        if (flushValue.size() == 1) {
-            return extractCards(hand.getSortedCards(), flushValue, Card::getCardColor);
+        for (Map.Entry<CardColor, Integer> entry : hand.getCountCardColors().entrySet()) {
+            if (entry.getValue() >= 5) {
+                List<Card> flushCards = extractCards(hand.getSortedCards(), Arrays.asList(entry.getKey()), Card::getCardColor);
+                return new ArrayList<>(flushCards.subList(0, 5)); // On ne garde que les 5 meilleures
+            }
         }
-        
         return null;
     }
     
@@ -382,6 +382,7 @@ public class PokerEngine {
 
         HandData hand = new HandData(cardValues, cardColors, sortedCards);
         evaluateHand(hand);
+        player.setFinalHand(hand.getType());
         
         return hand;
     }
@@ -426,43 +427,84 @@ public class PokerEngine {
     }
 
 
-    public List<PlayerSession> determineWinners(List<PlayerSession> players, List<Card> communityCards) {
-        if (players == null || players.isEmpty()) return null;
+    /* Méthode qui permet de trier les joueurs dans des groupes.
+     * Cela a deux utilités: les classer pour déterminer le potentiel gagnant, celui avec la meilleur main.
+     * Gérer des égalités et la distribution correcte du pot:
+     * - par exemple si deux joueurs ont la même main, on doit diviser le gain
+     * - si le joueur à une mise inférieur avec un all-in, il faut continuer à distribuer le montant équitablement aux "prochains gagnants"
+    */
+    private List<List<PlayerSession>> groupPlayersByHand(List<PlayerSession> survivors, List<Card> communityCards) {
+        // Résultat final, chaque groupe contient des joueurs qui ont la même main (égalité), et les groupes sont triés du meilleur au moins bon
+        List<List<PlayerSession>> rankedGroups = new ArrayList<>();
 
-        List<PlayerSession> winners = new ArrayList<>();
+        List<PlayerSession> currentGroup = new ArrayList<>();
+        currentGroup.add(survivors.get(0));  // survivors est trié donc le premier à l'une des meilleurs mains
+        rankedGroups.add(currentGroup);            // On doit tout de suite ajouter le groupe du "potentiel gagnant"
 
-        // Map pour stocker les mains des joueurs
-        HashMap<PlayerSession, HandData> playerHands = new HashMap<>();
-        for (PlayerSession p : players) {
-            HandData hand = evaluateSinglePlayer(p, communityCards);
-            p.setFinalHand(hand.getType());
-            playerHands.put(p, hand);
+        for (int i = 1; i < survivors.size(); i++) {
+            PlayerSession p = survivors.get(i);
+            HandData hSorted = evaluateSinglePlayer(survivors.get(i-1), communityCards); // Ce joueur est déjà dans le groupe courant par récurrence
+            HandData hNotSorted = evaluateSinglePlayer(p, communityCards);               // On ré-évalue la main nouveau joueur pour le comparer avec le précédent
 
-        }
-
-        // Gagnant temporaire
-        PlayerSession currentWinner = players.getFirst();
-        winners.add(currentWinner);
-        HandData winningHand = playerHands.get(currentWinner);
-
-        for (int i = 1; i < players.size(); i++) {
-            PlayerSession candidate = players.get(i);
-            HandData candidateHand = playerHands.get(candidate);
-
-            int cmp = compareHands(candidateHand, winningHand);
-            
-            // Le second joueur possède une meilleur main que le gagnant courant
-            if (cmp > 0) {
-                winners.clear();
-                winners.add(candidate);
-                winningHand = candidateHand;
-            } else if (cmp == 0) {
-                winners.add(candidate);
+            if (compareHands(hSorted, hNotSorted) == 0) {
+                currentGroup.add(p);               // Ils ont la même main (même si le joueur précédent était classé avant)
+            } else {
+                currentGroup = new ArrayList<>();  // Comme les survivors sont déjà classé, p a forcément une moins bonne main
+                currentGroup.add(p);               // currentGroup est un nouveau groupe et on met le joueur dedans (le précédent est "plein")
+                rankedGroups.add(currentGroup);    // On ajoute déjà ce nouveau groupe (et on pourra ajouter le prochain joueur etc...)
             }
         }
 
-        return winners;
+        return rankedGroups;
     }
+
+
+    /* Méthode qui distribue équitablement le pot aux joueurs. :
+     * Chaque joueur gagne ce qu'il peut gagner en partant de ceux qui ont la meilleur main,
+     * jusqu'à ce que le pot soit vide. On distribue donc en cascade
+     * L'idée est la suivante:
+     *  - Pour chaque groupe, on récupère la valeur du plus petit all-in, c'est le palier maximum courant.
+     *  - Chaque joueur du groupe récupère ce gain.
+     *  - Dès qu'un joueur à tout récupéré (sa mise était égale au palier courant), il sort du calcul.
+     *  - Les autres joueurs récupèreront d'autres gain (puisqu'ils ont misé davantage)
+     *    en se basant sur le prochain palier
+    */
+    private void distributePot(Table table, List<List<PlayerSession>> rankedGroups) {
+        for (List<PlayerSession> originalGroup : rankedGroups) {
+
+            List<PlayerSession> group = new ArrayList<>(originalGroup);
+
+            // On doit boucler tant qu'il y a encore des membres dans le groupe qui peuvent gagner de l'argent
+            // C'est pour gérer le cas où des membres n'ont pas misé le même montant à cause de all-in
+            while(!group.isEmpty()) {
+                // On enlève directement les joueurs qui ne peuvent plus réclamer
+                group.removeIf(p -> p.getTotalInvestedInHand() <= 0); // On les retire
+                if (group.isEmpty()) break;                           // Groupe suivant
+
+                // On récupère le plus petit all-in
+                double minInvestedInGroup = group.stream()
+                    .mapToDouble(PlayerSession::getTotalInvestedInHand)
+                    .min().orElse(0);
+
+                // Il reste les joueurs du groupe qui peuvent encore gagner à hauteur max du plus petit all-in
+                double groupHarvest = 0;
+
+                // Chaque contributeur donne au groupe
+                for (PlayerSession contributor : table.getActivePlayers()) {
+                    double contribution = Math.min(contributor.getTotalInvestedInHand(), minInvestedInGroup);
+                    groupHarvest += contribution;
+                    // Ici chaque gagnant est aussi un contributeur, mais il récupère ensuite ce qu'il a misé !
+                    contributor.setTotalInvestedInHand(contributor.getTotalInvestedInHand() - contribution);
+                }
+
+                // On répartit la somme entre les membres du groupe
+                double share = groupHarvest / group.size();
+                for (PlayerSession winner : group) {
+                    winner.deposit(share);
+                }
+            }
+        }
+   }
 
 
 
@@ -569,6 +611,8 @@ public class PokerEngine {
     public void clearTable(Table t) {
         t.setGameState(GameState.WAITING_FOR_PLAYERS);
         t.getGameHand().getCommunityCards().clear();
+
+        t.getGameHand().resetDeck();
         
         for (PlayerSession p : t.getActivePlayers()) {
             p.resetBet();
@@ -576,6 +620,7 @@ public class PokerEngine {
             p.setHasFolded(false);
             p.setAllIn(false);
             p.setHasActed(false);
+            p.setTotalInvestedInHand(0);
         }
 
         // Sécurité même si c'est fait au début d'une manche (startNewHand)
@@ -618,19 +663,23 @@ public class PokerEngine {
         gameHand.setSmallBlindPlayer(sbPlayer);
         gameHand.setBigBlindPlayer(bbPlayer);
 
-        // Définit les montants
-        double smallBlind = table.getMinBet() / 2;
-        double bigBlind = table.getMinBet();
+        // Définit les montants. Attention, on ne peut pas prélever plus que ce que le joueur possède
+        double smallBlind = Math.min(table.getMinBet() / 2, sbPlayer.getCurrentStack());
+        double bigBlind = Math.min(table.getMinBet(), bbPlayer.getCurrentStack());
+
         gameHand.setSmallBlindAmount(smallBlind);
         gameHand.setBigBlindAmount(bigBlind);
 
         // Retire les mises
         sbPlayer.bet(smallBlind);
+        if (sbPlayer.getCurrentStack() <= 0) sbPlayer.setAllIn(true);
+
         bbPlayer.bet(bigBlind);
+        if (bbPlayer.getCurrentStack() <= 0) bbPlayer.setAllIn(true);
 
         // Ajoute les mises au pot
         gameHand.addToPot(smallBlind + bigBlind);
-        gameHand.setHighestBet(bigBlind);
+        gameHand.setHighestBet(Math.max(smallBlind, bigBlind));
     }
 
 
@@ -665,11 +714,16 @@ public class PokerEngine {
 
     /* Vérifie si le round est terminé.
      * C'est le cas si chaque joueur étant en capacié de jouer l'a fait, 
-     * et qu'il a suivi la plus grosse mise
+     * et qu'il a suivi la plus grosse mise, ou bien s'il ne reste qu'un seul joueur
     */
     private boolean isRoundFinished(Table table) {
-        List<PlayerSession> activePlayers = table.getActivePlayers();
+        // Il ne reste qu'un survivant, le tour s'arrête immédiatement
+        if (countSurvivors(table).size() <= 1) {
+            return true;
+        }
 
+        // On regarde si tous les joueurs actifs on parlé et suivi la mise
+        List<PlayerSession> activePlayers = table.getActivePlayers();
         for (PlayerSession player : activePlayers) {
             // On passe les joueurs qui se sont couchés ou ont all-in (ils ne peuvent plus rien faire)
             if (player.hasFolded() || player.isAllIn()) continue;
@@ -678,7 +732,6 @@ public class PokerEngine {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -843,8 +896,8 @@ public class PokerEngine {
             // Le gagant remporte le pot
             PlayerSession winner = survivors.getFirst();
             table.setWinners(Arrays.asList(winner));
-
             winner.deposit(table.getGameHand().getPotAmount());
+            table.getGameHand().setPotAmount(0);
             table.setGameState(GameState.SHOWDOWN);
 
         } else if (activeBettors.size() <= 1 && survivors.size() > 1) {
@@ -890,22 +943,29 @@ public class PokerEngine {
     }
 
 
+    /* Evalue la fin de partie en distribuant le pot parmi les joueurs
+     * Renvoie les joueurs aillant eu la meilleure main.
+     * Attention, ce ne sont pas forcément ceux qui ont remporté le plus (dépend de leur mise de all-in)
+    */
     public List<PlayerSession> evaluateShowdown(Table table) {
-        List<Card> communityCards = table.getGameHand().getCommunityCards();
-        List<PlayerSession> activePlayers = table.getActivePlayers();
+        List<Card> communityCards = table.getGameHand().getCommunityCards();  // Cartes sur le tapis
+        List<PlayerSession> survivors = countSurvivors(table);  // Gagnants potentiels
+        if (survivors.isEmpty()) return null;  // Normalement IMPOSSIBLE
 
-        List<PlayerSession> winners = determineWinners(activePlayers, communityCards);
+        // On trie les survivants par meilleur main (sans gérer pour l'instant les égalités)
+        survivors.sort((p1, p2) -> compareHands(evaluateSinglePlayer(p2, communityCards),
+                                                evaluateSinglePlayer(p1, communityCards)));
 
-        double winnersGain = table.getGameHand().getPotAmount() / winners.size();
+        // On fait des groupes de joueurs pour gérer les égualité
+        List<List<PlayerSession>> rankedGroups = groupPlayersByHand(survivors, communityCards);
 
-        for (PlayerSession winner : winners) {
-            winner.deposit(winnersGain);
-        }
+        // On distribue les sommes par groupe
+        distributePot(table, rankedGroups);
 
-        table.setWinners(winners);
+        table.getGameHand().setPotAmount(0);
         table.setGameState(GameState.SHOWDOWN);
 
-        return winners;
+        return rankedGroups.get(0);
     }
 
 

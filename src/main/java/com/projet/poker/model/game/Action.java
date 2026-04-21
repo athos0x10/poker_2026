@@ -1,8 +1,8 @@
-package main.java.com.projet.poker.model.game;
+package com.projet.poker.model.game;
 
 import java.util.Date;
 
-import main.java.com.projet.poker.engine.ActionType;
+import com.projet.poker.engine.ActionType;
 
 public class Action {
     

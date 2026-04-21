@@ -1,10 +1,10 @@
-package main.java.com.projet.poker.model.game;
+package com.projet.poker.model.game;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import main.java.com.projet.poker.engine.Card;
-import main.java.com.projet.poker.engine.HandType;
+import com.projet.poker.engine.Card;
+import com.projet.poker.engine.HandType;
 
 public class PlayerSession {
 
@@ -32,6 +32,8 @@ public class PlayerSession {
 
     // Mise sur le tour courant
     private double betInCurrentRound;
+    // Mise total permet de faire le calcul du partage du pot
+    private double totalInvestedInHand;
 
     public PlayerSession(long userId) {
         this.userId = userId;
@@ -52,6 +54,7 @@ public class PlayerSession {
     
     public void addBet(double amount) {
         betInCurrentRound += amount;
+        totalInvestedInHand += amount;
     }
 
     public void resetBet() {
@@ -83,6 +86,10 @@ public class PlayerSession {
         return hasActed;
     }
 
+    public double getTotalInvestedInHand() {
+        return totalInvestedInHand;
+    }
+
     public HandType getFinalHand() {
         return finalHand;
     }
@@ -105,6 +112,10 @@ public class PlayerSession {
 
     public int getSeatNumber() {
         return seatNumber;
+    }
+
+    public void setTotalInvestedInHand(double totalInvestedInHand) {
+        this.totalInvestedInHand = totalInvestedInHand;
     }
 
     public void setFinalHand(HandType finalHand) {

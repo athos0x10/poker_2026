@@ -1,8 +1,8 @@
-package main.java.com.projet.poker.engine.commands;
+package com.projet.poker.engine.commands;
 
-import main.java.com.projet.poker.engine.BaseCommand;
-import main.java.com.projet.poker.engine.PokerEngine;
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.engine.BaseCommand;
+import com.projet.poker.engine.PokerEngine;
+import com.projet.poker.model.game.Table;
 
 public class PlayerBetCommand extends BaseCommand {
 

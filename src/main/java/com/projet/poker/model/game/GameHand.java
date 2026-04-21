@@ -1,11 +1,11 @@
-package main.java.com.projet.poker.model.game;
+package com.projet.poker.model.game;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import main.java.com.projet.poker.engine.Card;
-import main.java.com.projet.poker.engine.Deck;
+import com.projet.poker.engine.Card;
+import com.projet.poker.engine.Deck;
 
 public class GameHand {
     /* Classe représentant une manche / partie de poker 
@@ -57,6 +57,10 @@ public class GameHand {
 
     public void burnCard() {
         deck.burnCard();
+    }
+
+    public void resetDeck() {
+        this.deck = new Deck();
     }
 
     public void setPotAmount(double potAmount) {

@@ -1,9 +1,9 @@
-package main.java.com.projet.poker.engine.logger;
+package com.projet.poker.engine.logger;
 
-import main.java.com.projet.poker.engine.Card;
-import main.java.com.projet.poker.model.game.GameHand;
-import main.java.com.projet.poker.model.game.PlayerSession;
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.engine.Card;
+import com.projet.poker.model.game.GameHand;
+import com.projet.poker.model.game.PlayerSession;
+import com.projet.poker.model.game.Table;
 
 public class ConsoleGameLogger implements GameLogger {
 

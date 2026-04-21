@@ -1,4 +1,4 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
 public enum HandType {
     QUINTE_FLUSH(9),

@@ -1,6 +1,6 @@
-package main.java.com.projet.poker.engine;
+package com.projet.poker.engine;
 
-import main.java.com.projet.poker.model.game.Table;
+import com.projet.poker.model.game.Table;
 
 public abstract class BaseCommand {
     private String name;
