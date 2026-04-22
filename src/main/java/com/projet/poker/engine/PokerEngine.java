@@ -48,11 +48,6 @@ public class PokerEngine {
         registry.registerCommand(new HighestBetCommand());
     }
 
-
-    public void executeSystemCommand(Table table, String input) {
-        registry.dispatch(input, table, this);
-    }
-
     
     public GameLogger getLogger() {
         return logger;
