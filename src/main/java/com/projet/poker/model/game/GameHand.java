@@ -12,10 +12,7 @@ public class GameHand {
      * (au début de laquelle on redistribue les cartes, et à la fin de laquelle on détermine le gagnant)
      */
     
-    private long id;
-    private long tableId;
     private Date startTime;
-
     private double smallBlindAmount;
     private double bigBlindAmount;
     private double potAmount;
@@ -33,8 +30,6 @@ public class GameHand {
     }
 
     public GameHand(double potAmount, PlayerSession dealerButton) {
-        this.id = 0;
-        this.tableId = 0;
         this.potAmount = potAmount;
         this.communityCards = new ArrayList<>();
         this.deck = new Deck();

@@ -8,10 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Scanner;
 import java.util.function.Function;
 
-import com.projet.poker.engine.commands.*;
 import com.projet.poker.engine.logger.ConsoleGameLogger;
 import com.projet.poker.engine.logger.GameLogger;
 import com.projet.poker.model.game.Action;
@@ -27,35 +25,22 @@ public class PokerEngine {
      */
 
     private static final int MAX_HAND = 5;
+    private GameNotifier notifier;
     private GameLogger logger;
-    private CommandRegistry registry;
 
 
     public PokerEngine() {
         this.logger = new ConsoleGameLogger();
-        this.registry = new CommandRegistry();
+    }
 
-        registry.registerCommand(new HelpCommand());
-        registry.registerCommand(new TableCommand());
-        registry.registerCommand(new GameHandCommand());
-        registry.registerCommand(new MeCommand());
-        registry.registerCommand(new CheatCommand());
-        registry.registerCommand(new PlayerInfoCommand());
-        registry.registerCommand(new PotCommand());
-        registry.registerCommand(new PlayerStackCommand());
-        registry.registerCommand(new PlayerBetCommand());
-        registry.registerCommand(new WinnersCommand());
-        registry.registerCommand(new HighestBetCommand());
+
+    public void setNotifier(GameNotifier notifier) {
+        this.notifier = notifier;
     }
 
     
     public GameLogger getLogger() {
         return logger;
-    }
-
-    
-    public CommandRegistry getRegistry() {
-        return registry;
     }
 
 
@@ -1002,76 +987,8 @@ public class PokerEngine {
     *========================================= MAIN ========================================
     ======================================================================================= */
 
-
-    /* Parse une action */
-    private Action parseGameAction(String input, Table table) {
-        String[] parts = input.split("\\s+");
-        String typeStr = parts[0].toUpperCase();
-        double amount = (parts.length > 1) ? Double.parseDouble(parts[1]) : 0;
-        
-        int currentIndex = table.getGameHand().getCurrentTurnIndex();
-        
-        return new Action(ActionType.valueOf(typeStr), currentIndex, amount);
-    }
-
-
-    /* Attend une action d'un joueur (en vrai, ce sera une requête du front end) */
-    public void waitForRequest(Table table, Scanner scanner) {
-        boolean actionValidated = false;
-    
-        while (!actionValidated) {
-            logger.logInfo("Attente d'une commande (tapez /help pour la liste)...\n");
-
-            String input = scanner.nextLine().trim();
-
-            if (input.isEmpty()) {
-                logger.logError("Aucune commande saisie. Veuillez réessayer.");
-                continue;
-            }
-
-            if (input.startsWith("/")) {
-                registry.dispatch(input, table, this);
-
-            } else {
-                try {
-                    Action action = parseGameAction(input, table);
-                    
-                    if (processAction(table, action)) {
-                        actionValidated = true;
-                    } else {
-                        logger.logError("Action invalide. Veuillez réessayer.");
-                    }
-                } catch (Exception e) {
-                    logger.logError("Commande inconnue. Tapez /help pour voir les options");
-                }
-            }
-        }
-    }
-
-
-    /* Test rapidement une partie à 3 joueurs
-     * Fonction à reprendre dans la logique pour gérer une vraie partie asynchrone
-     * côté front end
-     */
+    /* Méthode principale */
     public void start() {
-        Table table = new Table(0, "Table1", 10 , 3);
-        Scanner scanner = new Scanner(System.in);
-
-        
-        for (int i = 0; i < table.getMaxPlayers(); i++) {
-            table.addPlayer(new PlayerSession(i, 200, i));
-        }
-
-        startNewHand(table);
-
-        while (table.getGameState() != GameState.SHOWDOWN) {
-            logger.logAllInfos(table);
-            waitForRequest(table, scanner);
-        }
-
-        logger.logPlayerHands(table);
-        logger.logWinners(table);
-
-        scanner.close();
+        return;
     }
 }

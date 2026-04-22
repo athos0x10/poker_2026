@@ -10,9 +10,6 @@ public class PlayerSession {
 
     /* Un joueur (identifié dans le jeu, côté serveur) */
     
-    private long tableId;
-    private long userId;
-
     private long id;
     private int seatNumber;
 
@@ -35,16 +32,14 @@ public class PlayerSession {
     // Mise total permet de faire le calcul du partage du pot
     private double totalInvestedInHand;
 
-    public PlayerSession(long userId) {
-        this.userId = userId;
+    public PlayerSession(long id) {
+        this.id = id;
         this.holeCards = new ArrayList<>();
 
     }
 
     public PlayerSession(long id, double currentStack, int seatNumber) {
         this.id = id;
-        this.tableId = 0;
-        this.userId = 0;
         this.currentStack = currentStack;
         this.seatNumber = seatNumber;
         this.hasFolded = false;
