@@ -1,5 +1,4 @@
 package com.projet.poker.dto;
-
 import java.util.List;
 
 import lombok.Data;
@@ -9,6 +8,6 @@ import lombok.Data;
 public class AmitieResponse {
 
     private String login;
-    private List<AmitieStatus> amities;
+    private List<AmiDetailDTO> amities;
 }
 

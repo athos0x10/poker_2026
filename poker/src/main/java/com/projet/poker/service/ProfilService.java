@@ -57,4 +57,14 @@ public class ProfilService {
         profil.setNiveau(1);
         profilRepository.save(profil);
     }
+
+    /**
+     * Mofifier uniquement la biographie (utilisé dans le controller)
+     */
+    @Transactional
+    public void modifierBiographie(Long id, String nouvelleBio) {
+        Profil profil = recupererProfil(id);
+        profil.setBiographie(nouvelleBio);
+        profilRepository.save(profil);
+    }
 }

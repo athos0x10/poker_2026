@@ -7,6 +7,9 @@ import com.projet.poker.repository.AmitieRepository;
 import com.projet.poker.repository.UtilisateurRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class AmitieService {
@@ -87,5 +90,24 @@ public class AmitieService {
 
     amitie.setStatus(FriendStatus.BLOCKED);
     amitieRepository.save(amitie);
+  }
+
+  /**
+   * Lister les amis d'un utilisateur (confirmés et en attente)
+   */
+  public List<Amitie> listerAmis(Long userId) {
+    Utilisateur user = utilisateurRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+    // Récupérer les amitiés où l'utilisateur est le demandeur ou le receveur
+    List<Amitie> amities = amitieRepository.findAllByUser(user);
+    List<Amitie> amisAvecStatut = new ArrayList<>();
+    for (Amitie a : amities) {
+      // On ne garde que les amitiés en statut ACCEPTED ou PENDING
+      if (a.getStatus() == FriendStatus.ACCEPTED || a.getStatus() == FriendStatus.PENDING) {
+        amisAvecStatut.add(a);
+      }
+    }
+    return amisAvecStatut;
   }
 }
