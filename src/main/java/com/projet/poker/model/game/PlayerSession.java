@@ -32,6 +32,8 @@ public class PlayerSession {
     // Mise total permet de faire le calcul du partage du pot
     private double totalInvestedInHand;
 
+    private boolean hasDisconnected = false;
+
     public PlayerSession(long id) {
         this.id = id;
         this.holeCards = new ArrayList<>();
@@ -81,6 +83,10 @@ public class PlayerSession {
         return hasActed;
     }
 
+    public boolean hasDisconnected() {
+        return hasDisconnected;
+    }
+
     public double getTotalInvestedInHand() {
         return totalInvestedInHand;
     }
@@ -127,6 +133,10 @@ public class PlayerSession {
 
     public void setHasFolded(boolean hasFolded) {
         this.hasFolded = hasFolded;
+    }
+
+    public void setHasDisconnected(boolean hasDisconnected) {
+        this.hasDisconnected = hasDisconnected;
     }
 
     @Override

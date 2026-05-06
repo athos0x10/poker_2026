@@ -12,6 +12,7 @@ import java.util.function.Function;
 
 import com.projet.poker.engine.logger.ConsoleGameLogger;
 import com.projet.poker.engine.logger.GameLogger;
+import com.projet.poker.engine.network.GameNotifier;
 import com.projet.poker.model.game.Action;
 import com.projet.poker.model.game.GameHand;
 import com.projet.poker.model.game.PlayerSession;
@@ -38,11 +39,83 @@ public class PokerEngine {
         this.notifier = notifier;
     }
 
+    public GameNotifier getNotifier() {
+        return notifier;
+    }
+
     
     public GameLogger getLogger() {
         return logger;
     }
 
+
+    private void collectBlindsNotify(List<PlayerSession> activePlayers, PlayerSession sbPlayer, PlayerSession bbPlayer, GameHand gameHand) {
+        // Notifier les mises et le pot
+        if (notifier != null) {
+            notifier.broadcastBetAndStackUpdate(activePlayers, sbPlayer.getId(), sbPlayer.getBetInCurrentRound(), sbPlayer.getCurrentStack());
+            notifier.broadcastBetAndStackUpdate(activePlayers, bbPlayer.getId(), bbPlayer.getBetInCurrentRound(), bbPlayer.getCurrentStack());
+            notifier.broadcastPotUpdate(activePlayers, gameHand.getPotAmount());
+        }
+    }
+
+
+    private void startNewHandNotify(Table table, List<PlayerSession> activePlayers, GameHand gameHand) {
+        // Notifier les joueurs
+        if (notifier != null) {
+            // Envoyer les cartes à chaque joueur
+            for (PlayerSession player : activePlayers) {
+                notifier.sendHandCards(player.getId(), player.getHoleCards());
+            }
+            // Envoyer les informations complètes du jeu
+            for (PlayerSession player : activePlayers) {
+                notifier.sendFullGameInfos(player.getId(), table);
+            }
+            // Notifier le premier joueur que c'est son tour
+            notifier.notifyPlayerTurn(activePlayers.get(gameHand.getCurrentTurnIndex()).getId());
+        }
+    }
+
+
+    private void handleRoundEndingNotify(Table table, PlayerSession winner) {
+        // Notifier de la victoire par fold
+        if (notifier != null) {
+            notifier.broadcastShowdown(table.getActivePlayers(), table.getGameHand().getCommunityCards(), Arrays.asList(winner));
+        }
+    }
+
+
+    private void handleBoardUpdateNotify(Table table) {
+        // Notifier la mise à jour du board
+        if (notifier != null) {
+            notifier.broadcastBoardUpdate(table.getActivePlayers(), table.getGameHand().getCommunityCards());
+        }
+    }
+
+
+    private void handleShowdownNotify(Table table, List<List<PlayerSession>> rankedGroups) {
+        // Notifier le showdown
+        if (notifier != null) {
+            List<PlayerSession> winners = rankedGroups.get(0); // Le premier groupe est celui des gagnants
+            notifier.broadcastShowdown(table.getActivePlayers(), table.getGameHand().getCommunityCards(), winners);
+        }
+    }
+
+    
+    private void handleBetAndStackUpdateNotify(Table table, PlayerSession player) {
+        // Notifier la mise à jour des mises et stacks
+        if (notifier != null) {
+            notifier.broadcastBetAndStackUpdate(table.getActivePlayers(), player.getId(), player.getBetInCurrentRound(), player.getCurrentStack());
+            notifier.broadcastPotUpdate(table.getActivePlayers(), table.getGameHand().getPotAmount());
+        }
+    }
+
+
+    private void handleNextPlayerNotify(Table table, int nextTurn) {
+        // Notifier le prochain joueur que c'est son tour
+        if (notifier != null) {
+            notifier.notifyPlayerTurn(table.getActivePlayers().get(nextTurn).getId());
+        }
+    }
 
 
     /*=====================================================================================
@@ -591,8 +664,10 @@ public class PokerEngine {
     public void clearTable(Table t) {
         t.setGameState(GameState.WAITING_FOR_PLAYERS);
         t.getGameHand().getCommunityCards().clear();
-
         t.getGameHand().resetDeck();
+
+        // On retire les joueurs qui se sont déconnectés
+        t.getActivePlayers().removeIf(PlayerSession::hasDisconnected);
         
         for (PlayerSession p : t.getActivePlayers()) {
             p.resetBet();
@@ -660,6 +735,9 @@ public class PokerEngine {
         // Ajoute les mises au pot
         gameHand.addToPot(smallBlind + bigBlind);
         gameHand.setHighestBet(Math.max(smallBlind, bigBlind));
+
+        // Notifier les mises et le pot
+        collectBlindsNotify(activePlayers, sbPlayer, bbPlayer, gameHand);
     }
 
 
@@ -689,6 +767,9 @@ public class PokerEngine {
         gameHand.setCurrentTurnIndex(
             getNextPlayerIdx(getNextPlayerIdx(getNextPlayerIdx(dealerIdx, activePlayers.size()), activePlayers.size()), activePlayers.size())
         );
+
+        // Notifier les joueurs
+        startNewHandNotify(table, activePlayers, gameHand);
     }
 
 
@@ -852,7 +933,7 @@ public class PokerEngine {
      * On vérifie si en changeant de manche, on arrive naturellement à la fin de la partie (de la main = SHOWDOWN),
      * Ou bien si on continue normalement: nouvelle(s) carte(s) et tour de parole
     */
-    private void handleNextRound(Table table) {
+    private void handleNextStartingRound(Table table) {
         if (table.getGameState() == GameState.SHOWDOWN) {
             evaluateShowdown(table);
         } else {
@@ -880,12 +961,63 @@ public class PokerEngine {
             table.getGameHand().setPotAmount(0);
             table.setGameState(GameState.SHOWDOWN);
 
+            // Notifier de la victoire par fold
+            handleRoundEndingNotify(table, winner);
+
         } else if (activeBettors.size() <= 1 && survivors.size() > 1) {
             runTheBoard(table);
 
         } else {
             goNextState(table);
-            handleNextRound(table);
+            handleNextStartingRound(table);
+        }
+    }
+
+
+    /* 
+     * Gère le début d'un nouveau tour de parole:
+     * - Si le round est fini, on gère la fin du round
+     * - Sinon, on trouve le prochain joueur et on le notifie
+    */
+    private void startNewTurn(Table table, GameHand gameHand) {
+        if (isRoundFinished(table)) {
+            handleRoundEnding(table);
+        } else {
+            int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
+            gameHand.setCurrentTurnIndex(nextTurn);
+            handleNextPlayerNotify(table, nextTurn);
+        }
+    }
+
+
+    /* Gère la déconnexion d'un joueur */
+    public void handlePlayerQuit(Table table, long playerId) {
+        GameHand gameHand = table.getGameHand();
+        List<PlayerSession> activePlayers = table.getActivePlayers();
+
+        PlayerSession quittingPlayer = null;
+        int quittingPlayerIndex = -1;
+
+        for (int i = 0; i < activePlayers.size(); i++) {
+            if (activePlayers.get(i).getId() == playerId) {
+                activePlayers.get(i).setHasDisconnected(true);
+                quittingPlayer = activePlayers.get(i);
+                quittingPlayerIndex = i;
+                break;
+            }
+        }
+
+        if (table.getGameState() != GameState.WAITING_FOR_PLAYERS && table.getGameState() != GameState.SHOWDOWN 
+            && !quittingPlayer.hasFolded()) {
+            quittingPlayer.setHasFolded(true);
+
+            if (gameHand.getCurrentTurnIndex() == quittingPlayerIndex) {
+                startNewTurn(table, gameHand);
+            } else {
+                if (isRoundFinished(table)) handleRoundEnding(table);
+            }
+        } else {
+            table.getActivePlayers().removeIf(p -> p.getId() == playerId);
         }
     }
 
@@ -898,6 +1030,8 @@ public class PokerEngine {
         t.setGameState(GameState.FLOP);
 
         for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+
+        handleBoardUpdateNotify(t);
     }
 
 
@@ -909,6 +1043,8 @@ public class PokerEngine {
         t.setGameState(GameState.TURN);
 
         for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+
+        handleBoardUpdateNotify(t);
     }
 
 
@@ -920,6 +1056,8 @@ public class PokerEngine {
         t.setGameState(GameState.RIVER);
 
         for (PlayerSession p : t.getActivePlayers()) p.setHasActed(false);
+
+        handleBoardUpdateNotify(t);
     }
 
 
@@ -945,6 +1083,9 @@ public class PokerEngine {
         table.getGameHand().setPotAmount(0);
         table.setGameState(GameState.SHOWDOWN);
 
+        // Notifier les gagnants et les cartes finales
+        handleShowdownNotify(table, rankedGroups);
+
         return rankedGroups.get(0);
     }
 
@@ -961,34 +1102,27 @@ public class PokerEngine {
         GameHand gameHand = table.getGameHand();
 
         // Le joueur n'est pas autorisé à jouer si ce n'est pas son tour
-        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) return false;
+        if (action.getPlayerId() != gameHand.getCurrentTurnIndex()) {
+            if (notifier != null) notifier.notifyActionAck(action.getPlayerId(), false, "Ce n'est pas votre tour de jouer.");
+            return false;
+        }
 
         PlayerSession player = table.getActivePlayers().get(gameHand.getCurrentTurnIndex());
 
         // isLegal reste à false vraiment si le coup n'est pas autorisé (ex: jetons insuffisants)
         boolean isLegal = handleAction(table, action, player);
-
-        if (!isLegal) return false;
-        player.setHasActed(true);
-
-        if (isRoundFinished(table)) {
-            handleRoundEnding(table);
-        } else {
-            int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
-            gameHand.setCurrentTurnIndex(nextTurn);
+        if (!isLegal) {
+            if (notifier != null) notifier.notifyActionAck(action.getPlayerId(), false, "Action illégale.");
+            return false;
         }
 
+        player.setHasActed(true);
+
+        // Notifier de la mise à jour des bets et du stack
+        handleBetAndStackUpdateNotify(table, player);
+        startNewTurn(table, gameHand);
+        if (notifier != null) notifier.notifyActionAck(action.getPlayerId(), true, "Action valide.");
+
         return true;
-    }
-
-
-    
-    /*======================================================================================
-    *========================================= MAIN ========================================
-    ======================================================================================= */
-
-    /* Méthode principale */
-    public void start() {
-        return;
     }
 }
