@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Profil</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 900px; margin: auto; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; box-sizing: border-box; }
+        button { background: #ffca28; color: black; border: none; padding: 8px 12px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        .btn-small { padding: 4px 8px; font-size: 12px; margin-left: 5px; }
+        .btn-green { background: #4CAF50; color: white; }
+        .btn-red { background: #f44336; color: white; }
+        .friend-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
+        h3 { border-bottom: 1px solid #444; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div style="text-align: right; max-width: 900px; margin: 0 auto 20px;">
+    <button onclick="logout()">Se déconnecter</button>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>Mon Profil</h3>
+        <p><strong>Pseudo:</strong> <span id="p-login"></span></p>
+        <p><strong>Niveau:</strong> <span id="p-niveau"></span></p>
+        <p><strong>Solde:</strong> <span id="p-solde" style="color: #4CAF50; font-weight: bold;">0</span> €</p>
+        
+        <hr style="border-color: #333;">
+        <p><strong>Ma Biographie:</strong></p>
+        <textarea id="p-bio" rows="4"></textarea>
+        <button onclick="sauvegarderBio()">Sauvegarder Bio</button>
+    </div>
+
+    <div class="card">
+        <h3>Mes Amis</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="target-login" placeholder="Pseudo du joueur à ajouter">
+            <button onclick="demanderAmi()">Ajouter</button>
+        </div>
+        <div id="friends-list">
+            </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('poker_token');
+    if (!token) window.location.href = "index.html"; // Sécurité : retour au login si pas de token
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    async function loadData() {
+        try {
+            // Profil
+            const resP = await fetch('/api/profils/me', { headers });
+            const profil = await resP.json();
+            document.getElementById('p-login').innerText = profil.login;
+            document.getElementById('p-niveau').innerText = profil.niveau;
+            document.getElementById('p-bio').value = profil.biographie || "";
+
+            // Solde
+            const resS = await fetch('/api/portefeuille/mon-solde', { headers });
+            const soldeData = await resS.json();
+            document.getElementById('p-solde').innerText = soldeData.solde;
+
+            // Amis
+            chargerAmis();
+        } catch (e) {
+            console.error("Erreur", e);
+        }
+    }
+
+    async function sauvegarderBio() {
+        const nouvelleBio = document.getElementById('p-bio').value;
+        await fetch('/api/profils/me/bio', { method: 'PATCH', headers, body: JSON.stringify({ biographie: nouvelleBio }) });
+        alert("Biographie mise à jour !");
+    }
+
+    async function demanderAmi() {
+        const targetLogin = document.getElementById('target-login').value;
+        const res = await fetch('/api/amities/demande', { method: 'POST', headers, body: JSON.stringify({ targetLogin }) });
+        if (res.ok) {
+            alert("Demande envoyée !");
+            chargerAmis();
+        } else {
+            alert("Joueur introuvable.");
+        }
+    }
+
+    async function chargerAmis() {
+    const res = await fetch('/api/amities/me', { headers });
+    const amis = await res.json();
+    const list = document.getElementById('friends-list');
+    list.innerHTML = "";
+
+    amis.forEach(f => {
+        let actions = "";
+        let statusText = f.status;
+
+        // On vérifie 'isReceiver' OU 'receiver' (au cas où Spring a renommé la clé)
+        const jeSuisDestinataire = f.isReceiver === true || f.receiver === true;
+
+        if (f.status.toUpperCase() === "PENDING") {
+            if (jeSuisDestinataire) { 
+                statusText = "Demande reçue";
+                actions = `
+                    <button class="btn-small btn-green" onclick="repondreAmi(${f.amitieId}, true)">Accepter</button>
+                    <button class="btn-small btn-red" onclick="repondreAmi(${f.amitieId}, false)">Refuser</button>
+                `;
+            } else {
+                statusText = "En attente...";
+            }
+        } else if (f.status.toUpperCase() === "ACCEPTED") {
+            statusText = "Ami";
+        }
+
+        list.innerHTML += `
+            <div class="friend-item">
+                <span><strong>${f.amiLogin}</strong> <small style="color:#aaa;">(${statusText})</small></span>
+                <div>${actions}</div>
+            </div>
+        `;
+    });
+}
+
+    async function repondreAmi(amitieId, accepter) {
+        await fetch('/api/amities/reponse', { method: 'POST', headers, body: JSON.stringify({ amitieId, accepter }) });
+        chargerAmis(); // On recharge la liste
+    }
+
+    function logout() {
+        localStorage.removeItem('poker_token');
+        window.location.href = "index.html";
+    }
+
+    // Lancement
+    loadData();
+</script>
+</body>
+</html>

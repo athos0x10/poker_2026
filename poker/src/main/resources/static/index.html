@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Poker - Connexion</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #1e1e1e; padding: 30px; border-radius: 8px; width: 300px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: none; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #ffca28; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 10px; }
+        .toggle-link { color: #ffca28; cursor: pointer; text-align: center; display: block; margin-top: 15px; font-size: 14px; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="box" id="login-box">
+    <h2>Connexion</h2>
+    <input type="text" id="log-login" placeholder="Pseudo">
+    <input type="password" id="log-pass" placeholder="Mot de passe">
+    <button onclick="login()">Jouer</button>
+    <span class="toggle-link" onclick="toggleView()">Pas de compte ? S'inscrire</span>
+</div>
+
+<div class="box" id="reg-box" style="display: none;">
+    <h2>Inscription</h2>
+    <input type="text" id="reg-login" placeholder="Pseudo">
+    <input type="email" id="reg-email" placeholder="Email">
+    <input type="password" id="reg-pass" placeholder="Mot de passe">
+    <button onclick="register()">Créer le compte</button>
+    <span class="toggle-link" onclick="toggleView()">Déjà un compte ? Se connecter</span>
+</div>
+
+<script>
+    // Si on a déjà un token, on passe direct au profil
+    if (localStorage.getItem('poker_token')) {
+        window.location.href = "profil.html";
+    }
+
+    function toggleView() {
+        const logBox = document.getElementById('login-box');
+        const regBox = document.getElementById('reg-box');
+        if (logBox.style.display === 'none') {
+            logBox.style.display = 'block'; regBox.style.display = 'none';
+        } else {
+            logBox.style.display = 'none'; regBox.style.display = 'block';
+        }
+    }
+
+    async function login() {
+        const payload = { login: document.getElementById('log-login').value, password: document.getElementById('log-pass').value };
+        const res = await fetch('/api/utilisateurs/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('poker_token', data.token);
+            window.location.href = "profil.html"; // Redirection
+        } else alert("Erreur de connexion");
+    }
+
+    async function register() {
+        const payload = { login: document.getElementById('reg-login').value, email: document.getElementById('reg-email').value, passwordHash: document.getElementById('reg-pass').value };
+        const res = await fetch('/api/utilisateurs/inscription', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('poker_token', data.token); // Auto-login
+            window.location.href = "profil.html"; // Redirection
+        } else alert("Erreur d'inscription");
+    }
+</script>
+</body>
+</html>

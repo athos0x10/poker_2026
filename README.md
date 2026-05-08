@@ -80,21 +80,21 @@ classDiagram
         +String email
         +Date createdAt
         +authenticate(String password) boolean
+        +getAmities() List<Amitie>
     }
 
     class Profil {
         +Long id
-        +Long userId
         +String avatarUrl
         +String bio
         +int experiencePoints
         +int level
-        +addExperience(int points) void
+        +addExperiencePoints(int points) void
+        +calculerNiveau() void
     }
 
     class Portefeuille {
         +Long id
-        +Long userId
         +double globalBalance
         +addFunds(double amount) void
         +withdraw(double amount) boolean
@@ -102,8 +102,6 @@ classDiagram
 
     class Amitie {
         +Long id
-        +Long user1Id
-        +Long user2Id
         +FriendStatus status
         +Date since
     }
@@ -203,7 +201,8 @@ classDiagram
     %% --- RELATIONS ---
     Utilisateur "1" -- "1" Profil : possède
     Utilisateur "1" -- "1" Portefeuille : détient
-    Utilisateur "1" -- "*" Amitie : initie / reçoit
+    Utilisateur "1" -- "*" Amitie : est demandeur
+    Utilisateur "1" -- "*" Amitie : est receveur
     Utilisateur "1" -- "*" SessionJoueur : participe via
 
     Table "1" -- "*" SessionJoueur : accueille
@@ -243,3 +242,12 @@ flowchart LR
     UC5 -. "<< extends >>" .-> UC4
     UC6 -. "<< extends >>" .-> UC4
 ```
+
+## 7. Résumé des Relations Base de Données (Bloc Persistant)
+
+| Table         | Clé Étrangère (FK) | Nature de la FK                  |
+|--------------|-------------------|----------------------------------|
+| Profil       | utilisateur_id     | Pointe vers Utilisateur(id)       |
+| Portefeuille | utilisateur_id     | Pointe vers Utilisateur(id)       |
+| Amitie       | demandeur_id       | Pointe vers Utilisateur(id)       |
+| Amitie       | receveur_id        | Pointe vers Utilisateur(id)       |
