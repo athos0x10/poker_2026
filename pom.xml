@@ -26,5 +26,15 @@
             <version>2.14.0</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Spring Boot Starter Web (pour le serveur) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- Spring Boot Starter WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
     </dependencies>
 </project>

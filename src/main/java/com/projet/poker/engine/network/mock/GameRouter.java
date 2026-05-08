@@ -1,4 +1,4 @@
-package com.projet.poker.engine.network;
+package main.java.com.projet.poker.engine.network.mock;
 
 import com.google.gson.Gson;
 import com.projet.poker.engine.ActionType;
