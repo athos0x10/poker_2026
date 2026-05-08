@@ -7,18 +7,29 @@ import lombok.Data;
 // Permet d'avoir un format sécurisé lors de la demande de création d'un compte.
 public class InscriptionRequest {
 
-    // évite les injections du type XSS ?
-    @NotBlank
-    @Size(min = 3, max = 20)
-    @Pattern(regexp = "^[a-zA-Z0-9._-]+$",
-            message = "Le login contient des caractères non autorisés")
-    private String login;
+  // évite les injections du type XSS ?
+  @NotBlank
+  @Size(min = 3, max = 20)
+  @Pattern(regexp = "^[a-zA-Z0-9._-]+$",
+           message = "Le login contient des caractères non autorisés")
+  private String login;
 
-    @NotBlank
-    @Email
-    private String email;
+  @NotBlank @Email private String email;
 
-    // Le mdp est hashé avant de traverser le réseau.
-    @NotBlank
-    private String passwordHash;
+  // Le mdp est hashé avant de traverser le réseau.
+  @NotBlank private String passwordHash;
+
+  public String getLogin() { return login; }
+
+  public void setLogin(String login) { this.login = login; }
+
+  public String getEmail() { return email; }
+
+  public void setEmail(String email) { this.email = email; }
+
+  public String getPasswordHash() { return passwordHash; }
+
+  public void setPasswordHash(String passwordHash) {
+    this.passwordHash = passwordHash;
+  }
 }
