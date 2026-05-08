@@ -27,7 +27,6 @@ public class DTOManager {
   public record BetStackUpdateDTO(String type, long user_id, double currentBet,
                                   double currentStack) {}
 
-  // --- DTOs COMPLEXES (Sync & Showdown) ---
   public record PlayerInfoDTO(long id, double stack, double bet, boolean folded,
                               boolean allIn) {}
 
@@ -44,5 +43,7 @@ public class DTOManager {
 
   // ================ CLIENT -> SERVER ================
 
-  public record ActionRequestDTO(long playerId, String action, double amount) {}
+  public record ActionRequestDTO(int tableId, long playerId, String action, double amount) {}
+
+  public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) {}
 }

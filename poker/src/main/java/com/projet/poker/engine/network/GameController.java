@@ -1,5 +1,8 @@
 package com.projet.poker.engine.network;
 
+import com.projet.poker.engine.TableManager;
+import com.projet.poker.model.game.PlayerSession;
+import com.projet.poker.engine.network.dto.DTOManager.JoinRequestDTO;
 import com.projet.poker.engine.ActionType;
 import com.projet.poker.engine.PokerEngine;
 import com.projet.poker.engine.network.dto.DTOManager.ActionRequestDTO;
@@ -11,33 +14,46 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class GameController {
 
-  private final PokerEngine engine;
-  private final Table currentTable; // À remplacer par un TableManager plus tard
+    private final TableManager tableManager;
 
-  public GameController(PokerEngine engine) {
-    this.engine = engine;
-    // On initialise une table de test
-    this.currentTable = new Table(1, "Main Table", 10, 6);
-  }
-
-  @MessageMapping("/action") // Le front envoie sur /app/action
-  public void receiveAction(ActionRequestDTO request) {
-    // Gestion des commandes spéciales
-    if (request.action().equalsIgnoreCase("infos_req")) {
-      engine.getNotifier().sendFullGameInfos(request.playerId(), currentTable);
-      return;
+    public GameController(TableManager tableManager) {
+        this.tableManager = tableManager;
     }
 
-    if (request.action().equalsIgnoreCase("quit")) {
-      engine.getNotifier().broadcastPlayerQuit(currentTable.getActivePlayers(),
-                                               request.playerId());
-      engine.handlePlayerQuit(currentTable, request.playerId());
-      return;
+
+    @MessageMapping("/join") // front envoie sur /app/join
+    public void handleJoinRequest(JoinRequestDTO request) {
+        
+        PlayerSession newPlayer = new PlayerSession(
+            request.playerId(), 
+            request.initialStack(), 
+            request.seatNumber()
+        );
+
+        tableManager.joinTable(request.tableId(), newPlayer);
     }
 
-    // Conversion et envoi au moteur
-    ActionType type = ActionType.valueOf(request.action().toUpperCase());
-    Action action = new Action(type, request.playerId(), request.amount());
-    engine.processAction(currentTable, action);
-  }
+
+    @MessageMapping("/action") // front envoie sur /app/action
+    public void receiveAction(ActionRequestDTO request) {
+        int tableId = request.tableId();
+        
+        PokerEngine engine = tableManager.getEngine(tableId).orElse(null);
+        Table table = tableManager.getTable(tableId).orElse(null);
+
+        if (engine == null || table == null) return;
+
+        if (request.action().equalsIgnoreCase("infos_req")) {
+        engine.getNotifier().sendFullGameInfos(request.playerId(), table);
+        return;
+        } else if (request.action().equalsIgnoreCase("quit")) {
+        engine.getNotifier().broadcastPlayerQuit(table.getActivePlayers(), request.playerId());
+        engine.handlePlayerQuit(table, request.playerId());
+        return;
+        } else {
+        ActionType type = ActionType.valueOf(request.action().toUpperCase());
+        Action action = new Action(type, request.playerId(), request.amount());
+        engine.processAction(table, action);
+        }
+    }
 }

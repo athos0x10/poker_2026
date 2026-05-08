@@ -87,6 +87,11 @@ public abstract class JsonNotifier implements GameNotifier {
     }
 
     @Override
+    public void broadcastGamePaused(List<PlayerSession> players) {
+        broadcast(players, new ActionAckDTO("game_paused", 1, "Game is paused"));
+    }
+
+    @Override
     public void broadcastShowdown(List<PlayerSession> players, List<Card> board, List<PlayerSession> winners) {
         List<WinnerInfoDTO> winDtos = winners.stream()
             .map(w -> new WinnerInfoDTO(w.getId(), w.getFinalHand().toString(), mapCards(w.getHoleCards())))

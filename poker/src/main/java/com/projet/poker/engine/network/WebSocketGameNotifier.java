@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class WebSocketGameNotifier extends JsonNotifier {
+    /* @TODO potentiellement à modifier */
 
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -22,7 +23,7 @@ public class WebSocketGameNotifier extends JsonNotifier {
             message
         );
         
-        // Si c'est un broadcast (que tu gères dans la classe parente), 
+        // Si c'est un broadcast 
         // on peut aussi envoyer sur un topic commun :
         messagingTemplate.convertAndSend("/topic/table", message);
     }

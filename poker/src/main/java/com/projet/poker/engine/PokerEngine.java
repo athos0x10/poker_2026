@@ -8,7 +8,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 
 import com.projet.poker.engine.logger.ConsoleGameLogger;
 import org.springframework.stereotype.Component;
@@ -29,6 +33,8 @@ public class PokerEngine {
     private static final int MAX_HAND = 5;
     private GameNotifier notifier;
     private GameLogger logger;
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private ScheduledFuture<?> currentTimer;
 
     public PokerEngine() {
         this.logger = new ConsoleGameLogger();
@@ -991,6 +997,15 @@ public class PokerEngine {
         }
     }
 
+    /* Défini une limite de temps pour l'action d'un joueur */
+    private void startActionTimer(Table table, long playerId) {
+        if (currentTimer != null) currentTimer.cancel(false);
+
+        currentTimer = scheduler.schedule(() -> {
+            handlePlayerQuit(table, playerId);
+        }, 30, TimeUnit.SECONDS);
+    }
+
 
     /* 
      * Gère le début d'un nouveau tour de parole:
@@ -1004,6 +1019,7 @@ public class PokerEngine {
             int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
             gameHand.setCurrentTurnIndex(nextTurn);
             handleNextPlayerNotify(table, nextTurn);
+            startActionTimer(table, nextTurn);
         }
     }
 
@@ -1040,6 +1056,7 @@ public class PokerEngine {
             table.getActivePlayers().removeIf(p -> p.getId() == playerId);
         }
     }
+
 
     public void dealFlop(Table t) {
         GameHand g = t.getGameHand();
@@ -1084,6 +1101,21 @@ public class PokerEngine {
     }
 
 
+    /* Prépare la prochaine main */
+    public void prepareNextHand(Table table) {
+        table.getActivePlayers().removeIf(p -> p.getCurrentStack() <= 0);
+
+        if (table.getActivePlayers().size() >= 3) {
+            startNewHand(table);
+        } else {
+            table.setGameState(GameState.WAITING_FOR_PLAYERS);
+            
+            // Optionnel : Notifier le Front-end que la partie est en pause (ou terminée)
+            // if (notifier != null) notifier.broadcastGamePaused(table.getActivePlayers());
+        }
+    }
+
+
     /* Evalue la fin de partie en distribuant le pot parmi les joueurs
      * Renvoie les joueurs aillant eu la meilleure main.
      * Attention, ce ne sont pas forcément ceux qui ont remporté le plus (dépend de leur mise de all-in)
@@ -1109,6 +1141,10 @@ public class PokerEngine {
 
         // Notifier les gagnants et les cartes finales
         handleShowdownNotify(table, rankedGroups);
+
+        scheduler.schedule(() -> {
+            prepareNextHand(table);
+        }, 5, TimeUnit.SECONDS);
 
         return rankedGroups.get(0);
     }

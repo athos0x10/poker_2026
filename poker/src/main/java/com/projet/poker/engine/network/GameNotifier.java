@@ -22,5 +22,6 @@ public interface GameNotifier {
     void broadcastBetAndStackUpdate(List<PlayerSession> players, long playerId, double bet, double stack);
     void broadcastPotUpdate(List<PlayerSession> players, double potAmount);
     void broadcastPlayerQuit(List<PlayerSession> players, long playerId);
+    void broadcastGamePaused(List<PlayerSession> players);
     void broadcastShowdown(List<PlayerSession> players, List<Card> board, List<PlayerSession> winners);
 }
