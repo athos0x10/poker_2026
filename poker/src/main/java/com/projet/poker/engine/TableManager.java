@@ -2,12 +2,18 @@ package com.projet.poker.engine;
 
 import com.projet.poker.model.game.Table;
 import com.projet.poker.model.game.PlayerSession;
-import com.projet.poker.network.WebSocketGameNotifier;
+import com.projet.poker.engine.network.WebSocketGameNotifier;
 import org.springframework.stereotype.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Optional;
+
+// tests
+import jakarta.annotation.PostConstruct;
+
 
 @Service
 public class TableManager {
@@ -20,6 +26,13 @@ public class TableManager {
     @Autowired
     public TableManager(WebSocketGameNotifier gameNotifier) {
         this.gameNotifier = gameNotifier;
+    }
+
+    // pour les tests (creation de tables)
+    @PostConstruct
+    public void init() {
+        createTable(1, "Table des Pros", 10.0, 6);
+        createTable(2, "Table Débutant", 1.0, 8);
     }
 
     /**

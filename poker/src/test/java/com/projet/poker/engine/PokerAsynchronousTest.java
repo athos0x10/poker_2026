@@ -111,6 +111,7 @@ public class PokerAsynchronousTest {
         public int showdownCount = 0;
         public int fullInfosCount = 0;
         public boolean lastAckStatus = false;
+        public int pausedCount = 0;
 
         @Override public void sendHandCards(long pId, List<Card> c) { handCardsCount++; }
         @Override public void notifyActionAck(long pId, boolean ok, String msg) { ackCount++; lastAckStatus = ok; }
@@ -121,7 +122,12 @@ public class PokerAsynchronousTest {
         @Override public void broadcastBetAndStackUpdate(List<PlayerSession> p, long id, double b, double s) {}
         @Override public void broadcastPotUpdate(List<PlayerSession> p, double a) { potUpdateCount++; }
         @Override public void broadcastPlayerQuit(List<PlayerSession> p, long id) { quitCount++; }
+
+        @Override public void broadcastGamePaused(List<PlayerSession> p) { pausedCount++; }
+
         @Override public void broadcastShowdown(List<PlayerSession> p, List<Card> b, List<PlayerSession> w) { showdownCount++; }
+        
+        
     }
 
     @Test

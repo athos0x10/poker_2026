@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Poker - Connexion</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 900px; margin: auto; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; box-sizing: border-box; }
+        button { background: #ffca28; color: black; border: none; padding: 8px 12px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        .btn-small { padding: 4px 8px; font-size: 12px; margin-left: 5px; }
+        .btn-green { background: #4CAF50; color: white; }
+        .btn-red { background: #f44336; color: white; }
+        .friend-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
+        h3 { border-bottom: 1px solid #444; padding-bottom: 5px; }
+
+    </style>
+</head>
+<body>
+    
+    <div style="text-align: rigth; max-width: 900px; margin: 0 auto 20px;">
+        <button onclick="logout()">Se déconnecter</button>
+    </div>
+
+    <div style="text-align: left; max-width: 900px; margin: 0 auto 20px;">
+        <button onclick="back()">Retour au profil</button>
+    </div>
+
+    <div class="grid">
+    
+        <div th:if="${!listeDesTables.isEmpty()}">
+            <div class="card">
+                <div th:each="t : ${listeDesTables}" class="table-card">
+                    <h3 th:text="${t.name}">Nom fictif</h3>
+                    <p>Mise min: <span th:text="${t.minBet}">0</span>€</p>
+                    <p>Joueurs: <span th:text="${t.activePlayers.size()}">0</span> / <span th:text="${t.maxPlayers}">6</span></p>
+                    <textarea class="mise-input" rows="1" placeholder="Votre mise"></textarea>
+                    <button th:onclick="'joinTable(this, ' + ${t.id} + ')'">Jouer</button>
+                    <!-- <a th:href="@{/game/join(id=${t.id})}" class="btn-rejoindre">Rejoindre la table</a> -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Jouer</h3>
+            <div>
+                <br><textarea id="nom-table" rows="1"></textarea></br>
+                <br><textarea id="mise-table" rows="1"></textarea></br>
+                <select name="taile table" id="t-table">
+                    <option value="">--Veuillez choisir le nombre de joueurs--</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                </select>
+
+                <button type="button" onclick="creeTable()">Creer une Table</button>
+            </div>
+        </div>
+    </div>
+
+    <p th:if="${listeDesTables.isEmpty()}">Aucune table disponible pour le moment.</p>
+    
+
+<script>
+    const token = localStorage.getItem('poker_token');
+    if (!token) window.location.href = "index.html"; // Sécurité : retour au login si pas de token
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+
+    function logout() {
+        localStorage.removeItem('poker_token');
+        window.location.href = "index.html";
+    }
+    function back() {
+        window.location.href = "profil.html";
+    }
+
+    function createTable() {
+        const tableName = nom-table.value;
+        const miseMin = parseFloat(mise-table.value);
+        const tailleTable = t-table.value;
+
+        // faire appel pour creer table
+
+        // rejoindre table
+    }
+
+    function joinTable(event, tableId) {
+        // test
+        //window.location.href = window.location.origin  + "/profil.html";
+
+
+        // rediriger vers la table 
+
+        const mise = parseFloat(miseInput.value);
+        if (isNaN(mise) || mise <= 0) {
+            alert("Veuillez entrer une mise valide");
+            return;
+        }
+        const infoJoueur = getData();
+
+        // utiliser ca comme requete : public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) 
+
+        
+        if (mise < infoJoueur.soldeData) {
+           JoinRequestDTO(tableId, infoJoueur.playerId, infoJoueur.playerName, mise, infoJoueur.seatNumber);
+        } else {
+            alert("sold insuffisant");
+        }
+
+    }
+
+    async function getData() {
+        try {
+            // Profil
+            const resP = await fetch('/api/profils/me', { headers });
+            const profil = await resP.json();
+            const playerName= profil.login;
+            const playerId= profil.id;
+
+            const soldeData = soldeData.solde;
+
+            const seatNumber = 1; // voir comment le trouver
+
+            return (playerId, playerName, soldeData, seatNumber);
+
+            } catch (e) {
+            console.error("Erreur", e);
+        }
+        
+    }
+      
+            
+
+        //     // utiliser ca comme requete : public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) 
+        //     // tester quand l'autre partie sera ok 
+        
+        //     window.location.href = "profil.html";
+
+
+
+    function createTable() {
+        // vers page pour creer une table
+    }
+</script>
+</body>
+</html>
