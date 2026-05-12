@@ -33,10 +33,11 @@
             <div class="card">
                 <div th:each="t : ${listeDesTables}" class="table-card">
                     <h3 th:text="${t.name}">Nom fictif</h3>
-                    <p>Mise min: <span th:text="${t.minBet}">0</span>€</p>
-                    <p>Joueurs: <span th:text="${t.activePlayers.size()}">0</span> / <span th:text="${t.maxPlayers}">6</span></p>
+                    <p>Valeur grosse blind : <span th:text="${t.minBet}">0</span>€</p>
+                    <p>Joueurs : <span th:text="${t.activePlayers.size()}">0</span> / <span th:text="${t.maxPlayers}">6</span></p>
                     <textarea class="mise-input" rows="1" placeholder="Votre mise"></textarea>
-                    <button th:onclick="'joinTable(this, ' + ${t.id} + ')'">Jouer</button>
+                    <button th:onclick="|joinTable(event, ${t.id}, ${t.minBet})|">Jouer</button>
+                    <!-- <button th:onclick="'joinTable(this, ' + ${t.id} + ')'">Jouer</button> -->
                     <!-- <a th:href="@{/game/join(id=${t.id})}" class="btn-rejoindre">Rejoindre la table</a> -->
                 </div>
             </div>
@@ -45,8 +46,8 @@
         <div class="card">
             <h3>Jouer</h3>
             <div>
-                <br><textarea id="nom-table" rows="1"></textarea></br>
-                <br><textarea id="mise-table" rows="1"></textarea></br>
+                <br><textarea id="nom-table" rows="1" placeholder="Nom de la table"></textarea></br>
+                <br><textarea id="mise-table" rows="1" placeholder="Mise minimal de la table"></textarea></br>
                 <select name="taile table" id="t-table">
                     <option value="">--Veuillez choisir le nombre de joueurs--</option>
                     <option value="4">4</option>
@@ -79,59 +80,138 @@
     }
 
     function createTable() {
-        const tableName = nom-table.value;
-        const miseMin = parseFloat(mise-table.value);
-        const tailleTable = t-table.value;
+        // Ajoute .value à la fin !
+        const tableName = document.getElementById('nom-table').value;
+        const miseMin = parseFloat(document.getElementById('mise-table').value);
+        const tailleTable = document.getElementById('t-table').value;
 
-        // faire appel pour creer table
-
-        // rejoindre table
-    }
-
-    function joinTable(event, tableId) {
-        // test
-        //window.location.href = window.location.origin  + "/profil.html";
-
-
-        // rediriger vers la table 
-
-        const mise = parseFloat(miseInput.value);
-        if (isNaN(mise) || mise <= 0) {
-            alert("Veuillez entrer une mise valide");
+        if(!tableName || isNaN(miseMin)) {
+            alert("Remplissez les champs correctement");
             return;
         }
-        const infoJoueur = getData();
+    
+        console.log("Création de la table...", {tableName, miseMin, tailleTable});
 
-        // utiliser ca comme requete : public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) 
+        // dans DTO manager : rajouter une requete
+        // dans game controleur : rajouter une fonction
+    }
 
-        
-        if (mise < infoJoueur.soldeData) {
-           JoinRequestDTO(tableId, infoJoueur.playerId, infoJoueur.playerName, mise, infoJoueur.seatNumber);
-        } else {
-            alert("sold insuffisant");
+
+    async function joinTable(event, tableId, miseMin) {
+        if (event) event.preventDefault();
+
+        // On récupère le bouton sur lequel on a cliqué
+        const bouton = event.target;
+        // On cherche le textarea avec la classe 'mise-input' qui est juste à côté du bouton
+        const miseInput = bouton.parentElement.querySelector('.mise-input');
+        const mise = parseFloat(miseInput.value);
+
+        if (isNaN(mise) || mise < miseMin*5) {
+            alert("Veuillez entrer une mise valide, au moins 5 grosse blind");
+            return;
         }
+        // 1. On attend la récupération des données
+        const infoJoueur = await getData(); 
+        if (!infoJoueur) return; // Sécurité si getData échoue
+        // 2. Vérification du solde
+        if (mise <= infoJoueur.soldeData) {
+            // 3. Envoi de la requête au serveur
 
+
+            // changer ici se connecter au game controleur pour lui faire une requete
+            try {
+                const response = await fetch('/join', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        tableId: tableId,
+                        playerId: infoJoueur.playerId,
+                        playerName: infoJoueur.playerName,
+                        initialStack: mise,
+                        seatNumber: infoJoueur.seatNumber
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.href = "/table.html?id=" + tableId; // verifier le lien.
+                } else {
+                    alert("Erreur lors de l'accès à la table");
+                }
+            } catch (err) {
+                console.error("Erreur réseau :", err);
+                
+            }
+        } else {
+            alert("Solde insuffisant");
+        }
     }
 
     async function getData() {
         try {
-            // Profil
             const resP = await fetch('/api/profils/me', { headers });
+            if (!resP.ok) throw new Error("Erreur profil");
+
             const profil = await resP.json();
-            const playerName= profil.login;
-            const playerId= profil.id;
+            const resS = await fetch('/api/portefeuille/mon-solde', { headers });
+            const soldeDataJoueur = await resS.json();
 
-            const soldeData = soldeData.solde;
-
-            const seatNumber = 1; // voir comment le trouver
-
-            return (playerId, playerName, soldeData, seatNumber);
-
-            } catch (e) {
-            console.error("Erreur", e);
+            // On retourne un objet structuré
+            return {
+                playerName: profil.login,
+                playerId: profil.id,
+                soldeData: soldeDataJoueur.solde, // Vérifie bien le nom du champ dans ton JSON
+                seatNumber: 1
+            };
+        } catch (e) {
+            console.error("Erreur lors de la récupération des données :", e);
+            return null;
         }
-        
     }
+
+    // async function joinTable(event, tableId) {
+    //     // test
+    //     //window.location.href = window.location.origin  + "/profil.html";
+
+
+    //     // rediriger vers la table 
+
+    //     const mise = parseFloat(miseInput.value);
+    //     if (isNaN(mise) || mise <= 0) {
+    //         alert("Veuillez entrer une mise valide");
+    //         return;
+    //     }
+    //     const infoJoueur = await getData();
+
+    //     // utiliser ca comme requete : public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) 
+
+        
+    //     if (mise < infoJoueur.soldeData) {
+    //        JoinRequestDTO(tableId, infoJoueur.playerId, infoJoueur.playerName, mise, infoJoueur.seatNumber);
+    //     } else {
+    //         alert("sold insuffisant");
+    //     }
+
+    // }
+
+    // async function getData() {
+    //     try {
+    //         // Profil
+    //         const resP = await fetch('/api/profils/me', { headers });
+    //         const profil = await resP.json();
+    //         const playerName= profil.login;
+    //         const playerId= profil.id;
+
+    //         const soldeData = profil.solde;
+
+    //         const seatNumber = 1; // voir comment le trouver
+
+    //         return { playerId, playerName, soldeData, seatNumber };
+
+    //         } catch (e) {
+    //         console.error("Erreur", e);
+    //     }
+        
+    // }
       
             
 
@@ -141,10 +221,6 @@
         //     window.location.href = "profil.html";
 
 
-
-    function createTable() {
-        // vers page pour creer une table
-    }
 </script>
 </body>
 </html>
