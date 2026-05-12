@@ -1,0 +1,395 @@
+html {
+    --background-color: rgb(0, 0, 0);
+
+    /* --table-height: 400px; */
+    --table-width: 800px;
+    --table-ratio: 2;
+    --table-background-color: green;
+    --table-second-color: rgb(188, 249, 188);
+
+    --card-back-color: blue;
+    --card-front-color: white;
+    --card-front-text-color: black;
+    /* --card-height: 50px; */
+    --card-height: calc(var(--table-width) / 16);
+    --card-ratio: 0.75;
+    --card-radius: 3px;
+
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    background-color: blue;
+}
+
+#main_container {
+    background-color: var(--background-color);
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* boutons d'interactions avec l'utilisateur */
+#buttons {
+    /* flex-grow: 1; */
+
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    /* background-color: aqua; */
+
+    .button {
+        background-color: antiquewhite;
+        border-radius: 10px;
+        padding: 10px;
+        width: 80px;
+        /* height: 30px; */
+        text-align: center;
+    
+        user-select: none;
+        text-transform: uppercase;
+    }
+    .button:hover {
+        background-color: aqua;
+    }
+}
+#buttons.disabled {
+    .button {
+        background-color: grey;
+    }
+}
+
+/* la table de jeu */
+.table_container {
+    /* flex-grow: 4; */
+
+    width: var(--table-width);
+    min-width: var(--table-width);
+    /* height: var(--table-height); */
+    aspect-ratio: var(--table-ratio);
+    position: relative;
+    color: var(--table-second-color);
+    margin-bottom: 110px;
+    
+
+    .table_form {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: var(--table-width);
+        min-width: var(--table-width);
+        aspect-ratio: var(--table-ratio);
+        /* width: 100%;
+        height: 100%; */
+        background-color: var(--table-background-color);
+        border-radius: var(--table-width);
+    }
+    
+    .table_content {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: var(--table-width);
+        min-width: var(--table-width);
+        aspect-ratio: var(--table-ratio);
+        /* width: 100%;
+        height: 100%; */
+        z-index: 2;
+    }
+}
+
+/* les cartes du joueur */
+#my_cards {
+    position: absolute;
+    top: 90%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    gap: 5px;
+}
+
+/* les cartes des autres joueurs */
+.player_cards {
+    position: absolute;
+    --card-gap: 7px;
+    height: calc(var(--card-height) + var(--card-gap));
+    width: calc(var(--card-height) * var(--card-ratio) + var(--card-gap));
+    transform: translate(-50%, -50%);
+
+    .card {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .card:nth-child(2) {
+        transform: translate(var(--card-gap), var(--card-gap));
+    }
+}
+#player_cards_1 {
+    top: 90%;
+    left: 21%;
+    transform: translate(-50%, -50%) rotate(10deg);
+}
+#player_cards_2 {
+    top: 48%;
+    left: 5%;
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+#player_cards_3 {
+    top: 10%;
+    left: 21%;
+    transform: translate(-50%, -50%) rotate(170deg);
+}
+#player_cards_4 {
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(180deg);
+}
+#player_cards_5 {
+    top: 10%;
+    left: 79%;
+    transform: translate(-50%, -50%) rotate(190deg);
+}
+#player_cards_6 {
+    top: 52%;
+    left: 95%;
+    transform: translate(-50%, -50%) rotate(270deg);
+}
+#player_cards_7 {
+    top: 90%;
+    left: 79%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+}
+/* ... */
+
+.player_place {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: absolute;
+    transform: translate(-50%, -50%);
+
+    .player_icon {
+        width: 60px;
+        aspect-ratio: 1;
+        border-radius: 100%;
+        background-color: red;
+    }
+}
+#my_place {
+    top: 115%;
+    left: 50%;
+    
+    .player_icon {
+        width: 80px;
+    }
+}
+#player_place_1 {
+    top: 112%;
+    left: 18%;
+}
+#player_place_2 {
+    top: 50%;
+    left: -6%;
+}
+#player_place_3 {
+    top: -10%;
+    left: 18%;
+}
+#player_place_4 {
+    top: -12%;
+    left: 50%;
+}
+#player_place_5 {
+    top: -10%;
+    left: 82%;
+}
+#player_place_6 {
+    top: 50%;
+    left: 106%;
+}
+#player_place_7 {
+    top: 112%;
+    left: 82%;
+}
+
+
+/* le centre de la table : contenant la board et le pot */
+#center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+
+    /* la board : les cartes au milieu */
+    #board {
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+    }
+    .board_place {
+        height: var(--card-height);
+        aspect-ratio: var(--card-ratio);
+    
+        box-shadow: inset 0 0 0 1px var(--table-second-color);
+        border-radius: var(--card-radius);
+    }
+    /* ... */
+}
+
+/* pot : un montant d'argent */
+.pot_container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    user-select: none;
+}
+.pot_icon {
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 10px;
+}
+/* ... */
+
+
+
+.card {
+    background-color: var(--card-front-color);
+    color: var(--card-front-text-color);
+    height: var(--card-height);
+    aspect-ratio: var(--card-ratio);
+    border-radius: var(--card-radius);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    --card-text-size-ratio: 0.4;
+    font-size: calc(var(--card-text-size-ratio) * var(--card-height));
+}
+
+.card.back::after {
+    content: "";
+    display: block;
+    
+    --card-border-ratio: 0.07;
+    --card-border: calc(var(--card-border-ratio) * var(--card-height));
+    
+    height: calc(var(--card-height) - 2 * var(--card-border));
+    --temp-card-width: calc(var(--card-height) * var(--card-ratio));
+    width: calc( calc(var(--card-height) * var(--card-ratio)) - 2 * var(--card-border));
+    
+    /* margin: 10%; */
+    background-color: var(--card-back-color);
+}
+
+
+
+
+
+.spade,
+.heart,
+.clubs,
+.diamonds {
+    --card-text-size-ratio: 0.6;
+    font-size: calc(var(--card-text-size-ratio) * var(--card-height));
+    margin-top: calc(-0.2 * var(--card-height));
+}
+
+/* écrire le bon contenu sur chaque carte (pas besoin de le mettre dans le html) */
+.spades::after {
+    content: "♠";
+}
+.hearts::after {
+    content: "♥";
+    color: red;
+}
+.clubs::after {
+    content: "♣";
+}
+.diamonds::after {
+    content: "♦";
+    color: red;
+}
+
+
+.ace::after {
+    content: "A";
+}
+.two::after {
+    content: "2";
+}
+.three::after {
+    content: "3";
+}
+.four::after {
+    content: "4";
+    color: black;
+}
+.five::after {
+    content: "5";
+    color: black;
+}
+.six::after {
+    content: "6";
+    color: black;
+}
+.seven::after {
+    content: "7";
+    color: black;
+}
+.eight::after {
+    content: "8";
+    color: black;
+}
+.nine::after {
+    content: "9";
+    color: black;
+}
+.ten::after {
+    content: "10";
+    color: black;
+}
+.jack::after {
+    content: "J";
+    color: black;
+}
+.queen::after {
+    content: "Q";
+    color: black;
+}
+.king::after {
+    content: "K";
+    color: black;
+}
+
+
+
+
+
+
+
+
+
+
+.invisible {
+    display: none;
+}
