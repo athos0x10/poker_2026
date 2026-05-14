@@ -22,9 +22,10 @@ public class WebSocketGameNotifier extends JsonNotifier {
             "/queue/private", 
             message
         );
-        
-        // Si c'est un broadcast 
-        // on peut aussi envoyer sur un topic commun :
+    }
+
+    @Override
+    protected void broadcast(List<PlayerSession> players, Object message) {
         messagingTemplate.convertAndSend("/topic/table", message);
     }
 }
