@@ -89,7 +89,6 @@
                 const tableId = typeof data === 'number' ? data : data.tableId;
 
                 if (tableId) {
-                    alert("Table créée ! Redirection...");
                     window.location.href = `/table.html?id=${tableId}`;
                 }
             });
@@ -195,7 +194,6 @@
                 stompClient.send("/app/join", {}, JSON.stringify(payload));
                 
                 console.log("Requête de jointure envoyée :", payload);
-                alert("redirection");
                 
                 // Redirection après un court délai ou via un message retour du serveur
                 setTimeout(() => {
@@ -236,57 +234,6 @@
         }
     }
 
-    // async function joinTable(event, tableId) {
-    //     // test
-    //     //window.location.href = window.location.origin  + "/profil.html";
-
-
-    //     // rediriger vers la table 
-
-    //     const mise = parseFloat(miseInput.value);
-    //     if (isNaN(mise) || mise <= 0) {
-    //         alert("Veuillez entrer une mise valide");
-    //         return;
-    //     }
-    //     const infoJoueur = await getData();
-
-    //     // utiliser ca comme requete : public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) 
-
-        
-    //     if (mise < infoJoueur.soldeData) {
-    //        JoinRequestDTO(tableId, infoJoueur.playerId, infoJoueur.playerName, mise, infoJoueur.seatNumber);
-    //     } else {
-    //         alert("sold insuffisant");
-    //     }
-
-    // }
-
-    // async function getData() {
-    //     try {
-    //         // Profil
-    //         const resP = await fetch('/api/profils/me', { headers });
-    //         const profil = await resP.json();
-    //         const playerName= profil.login;
-    //         const playerId= profil.id;
-
-    //         const soldeData = profil.solde;
-
-    //         const seatNumber = 1; // voir comment le trouver
-
-    //         return { playerId, playerName, soldeData, seatNumber };
-
-    //         } catch (e) {
-    //         console.error("Erreur", e);
-    //     }
-        
-    // }
-      
-            
-
-        //     // utiliser ca comme requete : public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) 
-        //     // tester quand l'autre partie sera ok 
-        
-        //     window.location.href = "profil.html";
 
 
 </script>
