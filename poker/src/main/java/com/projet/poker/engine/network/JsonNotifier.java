@@ -17,11 +17,7 @@ public abstract class JsonNotifier implements GameNotifier {
     // Méthode abstraite à implémenter pour envoyer un message JSON à un joueur spécifique
     protected abstract void send(long targetPlayerId, Object message);
 
-    protected void broadcast(List<PlayerSession> players, Object message) {
-        for (PlayerSession p : players) {
-            send(p.getId(), message);
-        }
-    }
+    protected abstract void broadcast(List<PlayerSession> players, Object message);
 
     private List<String> mapCards(List<Card> cards) {
         return cards.stream().map(Card::toString).collect(Collectors.toList());
