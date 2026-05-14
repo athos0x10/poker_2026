@@ -16,6 +16,8 @@
         h3 { border-bottom: 1px solid #444; padding-bottom: 5px; }
 
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
     
@@ -70,6 +72,19 @@
     if (!token) window.location.href = "index.html"; // Sécurité : retour au login si pas de token
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
+    // connection au websoket
+    let stompClient = null;
+
+    function connect() {
+        const socket = new SockJS('/poker-game');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({ 'Authorization': `Bearer ${token}` }, function (frame) {
+            console.log('Connecté au WebSocket : ' + frame);
+        });
+    }
+
+    connect(); // Lancer la connexion au chargement de la page
+
 
     function logout() {
         localStorage.removeItem('poker_token');
@@ -113,34 +128,36 @@
         // 1. On attend la récupération des données
         const infoJoueur = await getData(); 
         if (!infoJoueur) return; // Sécurité si getData échoue
+        
         // 2. Vérification du solde
         if (mise <= infoJoueur.soldeData) {
             // 3. Envoi de la requête au serveur
 
 
-            // changer ici se connecter au game controleur pour lui faire une requete
-            try {
-                const response = await fetch('/join', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        tableId: tableId,
-                        playerId: infoJoueur.playerId,
-                        playerName: infoJoueur.playerName,
-                        initialStack: mise,
-                        seatNumber: infoJoueur.seatNumber
-                    })
-                });
+            // --- LA PARTIE QUI CHANGE ---
+            const payload = {
+                tableId: parseInt(tableId),
+                playerId: parseInt(infoJoueur.playerId),
+                playerName: infoJoueur.playerName,
+                initialStack: parseFloat(mise),
+                seatNumber: parseInt(infoJoueur.seatNumber)
+            };
 
-                if (response.ok) {
-                    window.location.href = "/table.html?id=" + tableId; // verifier le lien.
-                } else {
-                    alert("Erreur lors de l'accès à la table");
-                }
-            } catch (err) {
-                console.error("Erreur réseau :", err);
+            if (stompClient && stompClient.connected) {
+                // On envoie vers /app/join (Spring ajoute /app par défaut devant @MessageMapping)
+                stompClient.send("/app/join", {}, JSON.stringify(payload));
                 
+                console.log("Requête de jointure envoyée :", payload);
+                
+                // Redirection après un court délai ou via un message retour du serveur
+                setTimeout(() => {
+                    window.location.href = "/table.html?id=" + tableId;
+                }, 500);
+            } else {
+                alert("Erreur : La connexion au serveur de jeu est perdue.");
             }
+            // ----------------------------
+
         } else {
             alert("Solde insuffisant");
         }
