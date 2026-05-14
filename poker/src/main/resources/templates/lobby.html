@@ -50,6 +50,7 @@
             <div>
                 <br><textarea id="nom-table" rows="1" placeholder="Nom de la table"></textarea></br>
                 <br><textarea id="mise-table" rows="1" placeholder="Mise minimal de la table"></textarea></br>
+                <br><textarea id="mise-creation" rows="1" placeholder="Mise pour rejoindre la table"></textarea></br>
                 <select name="taile table" id="t-table">
                     <option value="">--Veuillez choisir le nombre de joueurs--</option>
                     <option value="4">4</option>
@@ -59,7 +60,7 @@
                     <option value="8">8</option>
                 </select>
 
-                <button type="button" onclick="creeTable()">Creer une Table</button>
+                <button th:onclick="|createTable()|">Creer une Table</button>
             </div>
         </div>
     </div>
@@ -80,6 +81,18 @@
         stompClient = Stomp.over(socket);
         stompClient.connect({ 'Authorization': `Bearer ${token}` }, function (frame) {
             console.log('Connecté au WebSocket : ' + frame);
+        
+            stompClient.subscribe('/user/queue/reply', function (message) {
+                const data = JSON.parse(message.body);
+
+                // On récupère l'ID (selon l'option choisie en Java)
+                const tableId = typeof data === 'number' ? data : data.tableId;
+
+                if (tableId) {
+                    alert("Table créée ! Redirection...");
+                    window.location.href = `/table.html?id=${tableId}`;
+                }
+            });
         });
     }
 
@@ -94,8 +107,10 @@
         window.location.href = "profil.html";
     }
 
-    function createTable() {
-        // Ajoute .value à la fin !
+
+
+    async function createTable() {
+        // Info Table ----------------------------------------------------------------
         const tableName = document.getElementById('nom-table').value;
         const miseMin = parseFloat(document.getElementById('mise-table').value);
         const tailleTable = document.getElementById('t-table').value;
@@ -105,10 +120,42 @@
             return;
         }
     
-        console.log("Création de la table...", {tableName, miseMin, tailleTable});
+        // Info Joueur ---------------------------------------------------------------
+        const mise = parseFloat(document.getElementById('mise-creation').value);
 
-        // dans DTO manager : rajouter une requete
-        // dans game controleur : rajouter une fonction
+        if (isNaN(mise) || mise < miseMin*5) {
+            alert("Veuillez entrer une mise valide, au moins 5 grosse blind " + mise);
+            return;
+        }
+
+        const infoJoueur = await getData(); 
+        if (!infoJoueur) return; 
+        
+        
+        // Creation de la Table -----------------------------------------------------
+        if (mise <= infoJoueur.soldeData) {
+
+            const payload = {
+                tableSize: parseInt(tailleTable),
+                tableName: tableName,
+                blind: parseInt(miseMin),
+                playerId: parseInt(infoJoueur.playerId),
+                playerName: infoJoueur.playerName,
+                initialStack: parseFloat(mise),
+                seatNumber: parseInt(infoJoueur.seatNumber)
+            };
+
+            if (stompClient && stompClient.connected) {
+                // On envoie vers /app/join (Spring ajoute /app par défaut devant @MessageMapping)
+                stompClient.send("/app/create", {}, JSON.stringify(payload));
+
+            } else {
+                alert("Erreur : La connexion au serveur de jeu est perdue.");
+            }
+
+        } else {
+            alert("Sold insuffisant !!");
+        }
     }
 
 
@@ -148,6 +195,7 @@
                 stompClient.send("/app/join", {}, JSON.stringify(payload));
                 
                 console.log("Requête de jointure envoyée :", payload);
+                alert("redirection");
                 
                 // Redirection après un court délai ou via un message retour du serveur
                 setTimeout(() => {
@@ -172,10 +220,13 @@
             const resS = await fetch('/api/portefeuille/mon-solde', { headers });
             const soldeDataJoueur = await resS.json();
 
+            const resI = await fetch('/api/profils/myId', { headers })
+            const id = await resI.json();
+
             // On retourne un objet structuré
             return {
                 playerName: profil.login,
-                playerId: profil.id,
+                playerId: id,
                 soldeData: soldeDataJoueur.solde, // Vérifie bien le nom du champ dans ton JSON
                 seatNumber: 1
             };

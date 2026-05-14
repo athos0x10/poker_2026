@@ -31,8 +31,9 @@ public class TableManager {
     // pour les tests (creation de tables)
     @PostConstruct
     public void init() {
-        createTable(1, "Table des Pros", 10.0, 6);
-        createTable(2, "Table Débutant", 1.0, 8);
+        // pour eviter les conflits avec celles créé par le controleur
+        createTable(1110, "Table des Pros", 10.0, 6);
+        createTable(2220, "Table Débutant", 1.0, 8);
     }
 
     /**

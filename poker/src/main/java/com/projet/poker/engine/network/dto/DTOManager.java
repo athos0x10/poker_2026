@@ -45,5 +45,7 @@ public class DTOManager {
 
   public record ActionRequestDTO(int tableId, long playerId, String action, double amount) {}
 
+  public record CreateRequestDOT(int tableSize, String tableName, int blind, long playerId, String playerName, double initialStack, int seatNumber) {}
+
   public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) {}
 }

@@ -15,6 +15,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.enableSimpleBroker("/topic", "/queue");
         // Le front envoie ses messages vers ce préfixe
         config.setApplicationDestinationPrefixes("/app");
+        // le front envoie des message au utilisateur 
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override

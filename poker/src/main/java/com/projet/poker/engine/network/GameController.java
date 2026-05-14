@@ -6,15 +6,18 @@ import com.projet.poker.engine.network.dto.DTOManager.JoinRequestDTO;
 import com.projet.poker.engine.ActionType;
 import com.projet.poker.engine.PokerEngine;
 import com.projet.poker.engine.network.dto.DTOManager.ActionRequestDTO;
+import com.projet.poker.engine.network.dto.DTOManager.CreateRequestDOT;
 import com.projet.poker.model.game.Action;
 import com.projet.poker.model.game.Table;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 @Controller
 public class GameController {
 
     private final TableManager tableManager;
+    private int newTableId = 1;
 
     public GameController(TableManager tableManager) {
         this.tableManager = tableManager;
@@ -31,6 +34,26 @@ public class GameController {
         );
 
         tableManager.joinTable(request.tableId(), newPlayer);
+    }
+
+    @MessageMapping("/create") // front envoie sur /app/create
+    @SendToUser("/queue/reply") // repond sur user/queue/reply
+    public int handleCreateRequest(CreateRequestDOT request) {
+        tableManager.createTable(newTableId, 
+            request.tableName(), 
+            request.blind(), 
+            request.tableSize());
+        
+        PlayerSession newPlayer = new PlayerSession(
+            request.playerId(), 
+            request.initialStack(), 
+            request.seatNumber()
+        );
+
+        tableManager.joinTable(newTableId, newPlayer);
+
+        newTableId++;
+        return newTableId - 1;
     }
 
 

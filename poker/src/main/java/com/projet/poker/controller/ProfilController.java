@@ -51,4 +51,10 @@ public class ProfilController {
         profilService.modifierBiographie(u.getProfil().getId(), request.get("biographie"));
         return ResponseEntity.ok(Map.of("message", "Biographie mise à jour"));
     }
+
+    @GetMapping("/myId")
+    public Long getMyId(@RequestHeader("Authorization") String token) {
+        Long userId = sessionManager.getUserId(token);
+        return userId;
+    }
 }
