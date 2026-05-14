@@ -44,16 +44,16 @@ public class GameController {
         if (engine == null || table == null) return;
 
         if (request.action().equalsIgnoreCase("infos_req")) {
-        engine.getNotifier().sendFullGameInfos(request.playerId(), table);
-        return;
+            engine.getNotifier().sendFullGameInfos(request.playerId(), table);
+            return;
         } else if (request.action().equalsIgnoreCase("quit")) {
-        engine.getNotifier().broadcastPlayerQuit(table.getActivePlayers(), request.playerId());
-        engine.handlePlayerQuit(table, request.playerId());
-        return;
+            engine.getNotifier().broadcastPlayerQuit(table.getActivePlayers(), request.playerId());
+            engine.handlePlayerQuit(table, request.playerId());
+            return;
         } else {
-        ActionType type = ActionType.valueOf(request.action().toUpperCase());
-        Action action = new Action(type, request.playerId(), request.amount());
-        engine.processAction(table, action);
+            ActionType type = ActionType.valueOf(request.action().toUpperCase());
+            Action action = new Action(type, request.playerId(), request.amount());
+            engine.processAction(table, action);
         }
     }
 }

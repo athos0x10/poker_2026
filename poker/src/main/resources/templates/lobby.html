@@ -66,13 +66,13 @@
 
 <script>
     const token = localStorage.getItem('poker_token');
-    if (!token) window.location.href = "index.html"; // Sécurité : retour au login si pas de token
+    if (!token) window.location.href = "auth.html"; // Sécurité : retour au login si pas de token
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
 
     function logout() {
         localStorage.removeItem('poker_token');
-        window.location.href = "index.html";
+        window.location.href = "auth.html";
     }
     function back() {
         window.location.href = "profil.html";

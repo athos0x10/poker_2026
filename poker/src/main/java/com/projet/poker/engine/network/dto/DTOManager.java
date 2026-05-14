@@ -14,8 +14,7 @@ public class DTOManager {
 
   public record PlayerTurnDTO(String type) {}
 
-  public record BestComboDTO(String type, String rank, List<String> cards_ids) {
-  }
+  public record BestComboDTO(String type, String rank, List<String> cards_ids) {}
 
   // --- DTOs BROADCAST ---
   public record PotUpdateDTO(String type, double amount) {}
@@ -33,8 +32,7 @@ public class DTOManager {
   public record FullGameInfosDTO(String type, String tableName,
                                  String gameState, double pot,
                                  List<String> board, double highestBet,
-                                 int currentTurn, List<PlayerInfoDTO> players) {
-  }
+                                 int currentTurn, List<PlayerInfoDTO> players) {}
 
   public record WinnerInfoDTO(long id, String hand, List<String> holeCards) {}
 
