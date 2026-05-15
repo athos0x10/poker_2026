@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <p>poker</p>
+
+    <script>
+        const token = localStorage.getItem('poker_token');
+        if (!token) {
+            window.location.href = "auth.html"; // Sécurité : retour au login si pas de token
+        } else {
+            window.location.href = "profil.html";
+        }
+    </script>
+</body>
+</html>

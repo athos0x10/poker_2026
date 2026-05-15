@@ -126,6 +126,7 @@ public class PokerAsynchronousTest {
         @Override public void broadcastGamePaused(List<PlayerSession> p) { pausedCount++; }
 
         @Override public void broadcastShowdown(List<PlayerSession> p, List<Card> b, List<PlayerSession> w) { showdownCount++; }
+        @Override public void broadcastFullGameInfos(List<PlayerSession> players, Table table) {}
         
         
     }
