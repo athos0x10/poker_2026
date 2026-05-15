@@ -41,7 +41,13 @@ public class Table {
     this.gameHand = new GameHand();
   }
 
-  public void addPlayer(PlayerSession p) { activePlayers.add(p); }
+  public void addPlayer(PlayerSession p) {
+    boolean alreadyPresent = activePlayers.stream()
+        .anyMatch(existing -> existing.getId() == p.getId());
+    if (!alreadyPresent) {
+      activePlayers.add(p);
+    }
+  }
 
   public void setGameState(GameState gameState) { this.gameState = gameState; }
 

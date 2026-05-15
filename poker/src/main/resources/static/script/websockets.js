@@ -1,16 +1,31 @@
 let stompClient;
-const tableId = 1;
+var tableId = 1;
 
 // Génération des données de session du joueur
-const playerId = Math.floor(Math.random() * 1000000) + 1;
-const seatNumber = Math.floor(Math.random() * 7) + 1;
-const initialStack = 1000;
+var playerId = null;
+var seatNumber = null;
+var playerName = null;
+var initialStack = 1000;
 let myPlayer;
 
 /**
  * Initialise la connexion SockJS et STOMP vers le serveur
  */
 function connect() {
+  if (!playerId) {
+    console.error('Impossible de se connecter : playerId non défini');
+    showActionMessage('Session non valide, reconnectez-vous.', true);
+    return;
+  }
+
+  if (!seatNumber || seatNumber < 1 || seatNumber > 7) {
+    seatNumber = parseInt(localStorage.getItem('poker_seat') || '0', 10);
+    if (!seatNumber || seatNumber < 1 || seatNumber > 7) {
+      seatNumber = Math.floor(Math.random() * 7) + 1;
+      localStorage.setItem('poker_seat', seatNumber);
+    }
+  }
+
   console.log(`Connecting to STOMP server for playerId=${playerId} seatNumber=${
       seatNumber}`);
 

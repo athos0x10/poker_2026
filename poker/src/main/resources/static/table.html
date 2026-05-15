@@ -110,6 +110,71 @@
         </div>
     </div>
 
+    <script>
+    async function getSessionToken() {
+        const token = localStorage.getItem('poker_token');
+        if (token) return token;
+        const match = document.cookie.match(/(?:^|; )poker_token=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    function redirectToAuth() {
+        window.location.href = 'auth.html';
+    }
+
+    async function fetchSessionInfo(token) {
+        const response = await fetch('/api/session/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Session invalide');
+        }
+        return response.json();
+    }
+
+    function renderInitialGameInfo(sessionInfo) {
+        if (!sessionInfo) return;
+        const statusText = sessionInfo.tableId ?
+            `Table ${sessionInfo.tableId} connectée` :
+            'Aucune partie en cours';
+        document.getElementById('status_message').textContent = statusText;
+        if (sessionInfo.gameState && sessionInfo.gameState.pot != null) {
+            document.getElementById('total_pot').textContent = sessionInfo.gameState.pot;
+        }
+    }
+
+    async function initTablePage() {
+        try {
+            const token = await getSessionToken();
+            if (!token) return redirectToAuth();
+
+            const sessionInfo = await fetchSessionInfo(token);
+            if (!sessionInfo.userId) return redirectToAuth();
+
+            playerId = sessionInfo.userId;
+            tableId = sessionInfo.tableId || 1;
+            playerName = sessionInfo.login || `Player${playerId}`;
+
+            let storedSeat = parseInt(localStorage.getItem('poker_seat') || '0', 10);
+            if (!storedSeat || storedSeat < 1 || storedSeat > 7) {
+                storedSeat = Math.floor(Math.random() * 7) + 1;
+                localStorage.setItem('poker_seat', storedSeat);
+            }
+            seatNumber = storedSeat;
+
+            renderInitialGameInfo(sessionInfo);
+            connect();
+        } catch (error) {
+            console.error('Erreur d\'initialisation de la table :', error);
+            redirectToAuth();
+        }
+    }
+
+    window.addEventListener('load', initTablePage);
+    </script>
 
     <script src="script/tools.js"></script>
     <script src="script/cards.js"></script>

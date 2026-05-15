@@ -69,6 +69,13 @@ public class TableManager {
         return Optional.ofNullable(tables.get(tableId));
     }
 
+    public Optional<Table> findTableByPlayerId(long playerId) {
+        return tables.values().stream()
+            .filter(table -> table.getActivePlayers().stream()
+                .anyMatch(player -> player.getId() == playerId))
+            .findFirst();
+    }
+
     public Optional<PokerEngine> getEngine(int tableId) {
         return Optional.ofNullable(engines.get(tableId));
     }
