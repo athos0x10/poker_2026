@@ -9,7 +9,13 @@
 <body>
     <div id="main_container">
         <div class="table_container">
-            <div class="table_form"></div>
+            <div class="table_form">
+                <div id="status_bar">
+                    <div id="status_message">En attente de la table...</div>
+                    <div id="action_message"></div>
+                    <div id="bet_message"></div>
+                </div>
+            </div>
             <div class="table_content">
                 <div id="center">
                     <div id="board">
@@ -100,7 +106,7 @@
             <div id="fold_button" class="button" onclick="fold()">fold</div>
             <div id="check_button" class="button" onclick="check()">check</div>
             <div id="call_button" class="button invisible" onclick="call()">call</div>
-            <div id="check_raise_button" class="button">raise</div>
+<div id="check_raise_button" class="button" onclick="raise()">raise</div>
         </div>
     </div>
 
@@ -110,50 +116,8 @@
     <script src="script/player.js"></script>
     <script src="script/game.js"></script>
     <script src="script/display.js"></script>
-    <script>
-        let me;
-        let p1;
-        let p2;
-        let middle_cards = [];
-        function init() {
-            me = new Player(id="payer_0", 1000, is_me=true);
-            p1 = new Player(id="player_1", 1000);
-            p2 = new Player(id="player_2", 1000);
-            me.setPosition(0);
-            p1.setPosition(3);
-            p2.setPosition(5);
-            
-            c1 = new Card(Rank.ACE, Suit.SPADES);
-            c2 = new Card(Rank.TWO, Suit.HEARTS);
-            c3 = new Card();
-            c4 = new Card();
-            c5 = new Card();
-            c6 = new Card();
-
-            me.setCards([c1, c2]);
-            p1.setCards([c3, c4]);
-            p2.setCards([c5, c6]);
-
-            display_player(p1);
-            display_player(p2);
-        }
-        function show_cards() {
-            display_player_cards(me);
-            display_player_cards(p1);
-            display_player_cards(p2);
-        }
-
-        function add_middle_card(card) {
-            middle_cards.push(card);
-            display_board(middle_cards);
-        }
-
-        init();
-        show_cards();
-
-        let c = new Card(Rank.ACE, Suit.SPADES);
-
-    </script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script src="script/websockets.js"></script>
 </body>
 </html>

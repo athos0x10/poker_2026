@@ -3,8 +3,6 @@ import java.util.List;
 
 public class DTOManager {
 
-
-
   // ================ SERVER -> CLIENT ================
 
   // --- DTOs PRIVES ---
@@ -14,7 +12,8 @@ public class DTOManager {
 
   public record PlayerTurnDTO(String type) {}
 
-  public record BestComboDTO(String type, String rank, List<String> cards_ids) {}
+  public record BestComboDTO(String type, String rank, List<String> cards_ids) {
+  }
 
   // --- DTOs BROADCAST ---
   public record PotUpdateDTO(String type, double amount) {}
@@ -27,12 +26,13 @@ public class DTOManager {
                                   double currentStack) {}
 
   public record PlayerInfoDTO(long id, double stack, double bet, boolean folded,
-                              boolean allIn) {}
+                              boolean allIn, int seatNumber) {}
 
   public record FullGameInfosDTO(String type, String tableName,
                                  String gameState, double pot,
                                  List<String> board, double highestBet,
-                                 int currentTurn, List<PlayerInfoDTO> players) {}
+                                 int currentTurn, List<PlayerInfoDTO> players) {
+  }
 
   public record WinnerInfoDTO(long id, String hand, List<String> holeCards) {}
 
@@ -41,7 +41,9 @@ public class DTOManager {
 
   // ================ CLIENT -> SERVER ================
 
-  public record ActionRequestDTO(int tableId, long playerId, String action, double amount) {}
+  public record ActionRequestDTO(int tableId, long playerId, String action,
+                                 double amount) {}
 
-  public record JoinRequestDTO(int tableId, long playerId, String playerName, double initialStack, int seatNumber) {}
+  public record JoinRequestDTO(int tableId, long playerId, String playerName,
+                               double initialStack, int seatNumber) {}
 }
