@@ -3,9 +3,11 @@ package com.projet.poker.engine.network;
 import com.projet.poker.engine.network.JsonNotifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class WebSocketGameNotifier extends JsonNotifier {
+
     /* @TODO potentiellement à modifier */
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -18,9 +20,9 @@ public class WebSocketGameNotifier extends JsonNotifier {
     protected void send(long targetPlayerId, Object message) {
         // Envoi privé : Spring utilise l'ID pour router vers la bonne session
         messagingTemplate.convertAndSendToUser(
-            String.valueOf(targetPlayerId), 
-            "/queue/private", 
-            message
+                String.valueOf(targetPlayerId),
+                "/queue/private",
+                message
         );
     }
 
