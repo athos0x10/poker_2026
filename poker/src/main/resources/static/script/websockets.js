@@ -8,6 +8,7 @@ var playerName = null;
 var initialStack = 1000;
 let myPlayer;
 
+
 /**
  * Initialise la connexion SockJS et STOMP vers le serveur
  */
@@ -147,16 +148,33 @@ function getCurrentPlayerIdFromInfos(message) {
   return message.players[idx].id;
 }
 
-function updateTurnStatus(message) {
-  const currentPlayerId = getCurrentPlayerIdFromInfos(message);
-  if (currentPlayerId == null) {
-    showStatusMessage('Tour inconnu');
-    return;
-  }
-  if (currentPlayerId === playerId) {
-    showStatusMessage('C’est ton tour !');
+function AmITheWinner(message) {
+  const a = message.gameWinners
+  if (!a) return null;
+  return a.some(objet => objet.id === playerId);
+}
+
+function updateTurnStatus(message, end_game=false) {
+  
+  if (end_game) {
+    const winner = AmITheWinner(message);
+    if (winner) {
+      showStatusMessage("Vous avez gagné !");
+    } else {
+      showStatusMessage("Vous avez perdu !");
+    }
   } else {
-    showStatusMessage(`C’est le tour du joueur ${currentPlayerId}`);
+    const currentPlayerId = getCurrentPlayerIdFromInfos(message);
+
+    if (currentPlayerId == null) {
+      showStatusMessage('Tour inconnu');
+      return;
+    }
+    if (currentPlayerId === playerId) {
+      showStatusMessage('C’est ton tour !');
+    } else {
+      showStatusMessage(`C’est le tour du joueur ${currentPlayerId}`);
+    }
   }
 }
 
@@ -169,6 +187,9 @@ function check() {
 }
 function call() {
   sendAction('call', 0);
+}
+function quit() {
+  sendAction('quit', 0);
 }
 
 function raise() {
@@ -262,6 +283,8 @@ function handleServerMessage(message) {
 
   switch (message.type) {
     case 'send_hand':
+      console.log("erase board");
+      clear_board();
       console.log('Received send_hand with cards:', message.cards_ids);
       showActionMessage('Tu as reçu tes cartes.', false);
       const handCards = message.cards_ids.map(parseCard);
@@ -330,6 +353,7 @@ function handleServerMessage(message) {
         display_board(message.finalBoard.map(parseCard));
       }
       console.log('Showdown - Winners:', message.gameWinners);
+      updateTurnStatus(message, end_game=true);
       break;
 
     default:

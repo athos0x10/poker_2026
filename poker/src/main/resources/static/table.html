@@ -104,13 +104,20 @@
 
         <div id="buttons">
             <div id="fold_button" class="button" onclick="fold()">fold</div>
-            <div id="check_button" class="button" onclick="check()">check</div>
-            <div id="call_button" class="button invisible" onclick="call()">call</div>
-<div id="check_raise_button" class="button" onclick="raise()">raise</div>
+            <!-- <div id="check_button" class="button" onclick="check()">check</div> -->
+            <div id="call_button" class="button" onclick="call()">check/call</div> <!--to invisible a button, add class "invisible"-->
+            <div id="check_raise_button" class="button" onclick="raise()">raise</div>
+            <div id="check_raise_button" class="button" onclick="quitTable()">quit</div>
         </div>
     </div>
 
     <script>
+
+    function quitTable() {
+        quit();
+        window.location.href = 'profil.html';
+    }
+    
     async function getSessionToken() {
         const token = localStorage.getItem('poker_token');
         if (token) return token;

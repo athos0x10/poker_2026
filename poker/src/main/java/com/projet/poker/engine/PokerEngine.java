@@ -1188,14 +1188,16 @@ public class PokerEngine {
   public void prepareNextHand(Table table) {
     table.getActivePlayers().removeIf(p -> p.getCurrentStack() <= 0);
 
-    if (table.getActivePlayers().size() >= 3) {
+    if (table.getActivePlayers().size() >= 2) {
       startNewHand(table);
     } else {
       table.setGameState(GameState.WAITING_FOR_PLAYERS);
 
       // Optionnel : Notifier le Front-end que la partie est en pause (ou
-      // terminée) if (notifier != null)
-      // notifier.broadcastGamePaused(table.getActivePlayers());
+      // terminée) 
+      if (notifier != null) {
+        notifier.broadcastGamePaused(table.getActivePlayers());
+      }
     }
   }
 

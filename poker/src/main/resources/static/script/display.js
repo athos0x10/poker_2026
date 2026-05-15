@@ -11,6 +11,19 @@ function display_board(cards) {
   }
 }
 
+function clear_board() {
+  for (var i = 0; i < 5; i++) {
+    const a = document.getElementById(`board_place_${i}`);
+    if (!a) {
+      console.warn(`board_place_${i} not found`);
+      continue;
+    } else {
+      a.innerHTML = "";
+    }
+  }
+  console.log("board cleared.");
+}
+
 function display_pot(pot) {
   const total_pot = document.getElementById(`total_pot`);
   if (!total_pot) {
