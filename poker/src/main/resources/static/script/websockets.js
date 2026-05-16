@@ -349,6 +349,18 @@ function handleServerMessage(message) {
 
     case 'user_quit':
       console.log('Joueur quitté :', message.user_id);
+      // help me find the player position to hide in the next line
+      const playerToHide = Object.values(otherPlayers).find(
+          (p) => p.data.id === message.user_id);
+      if (playerToHide) {
+        const pos = playerToHide.position;
+        const player_place = document.getElementById(`player_place_${pos}`);
+        if (player_place) {
+          player_place.classList.add('invisible');
+          console.log(`Player ${message.user_id} at position ${pos} is now invisible`);
+        }
+      }
+
       break;
 
     case 'reveal_cards':
