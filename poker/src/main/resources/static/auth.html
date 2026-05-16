@@ -57,7 +57,13 @@
     }
 
     async function register() {
-        const payload = { login: document.getElementById('reg-login').value, email: document.getElementById('reg-email').value, passwordHash: document.getElementById('reg-pass').value };
+        const login = document.getElementById('reg-login').value;
+        const mail = login + "@mail.com";
+        const password = "motdepasse";
+        // const mail = document.getElementById('reg-email').value;
+        // const password = document.getElementById('reg-pass').value;
+
+        const payload = { login: login, email: mail, passwordHash: password };
         const res = await fetch('/api/utilisateurs/inscription', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (res.ok) {
             const data = await res.json();

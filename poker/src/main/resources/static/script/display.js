@@ -116,3 +116,32 @@ function display_player_cards(player) {
   cards_container.innerHTML = temp;
   console.log('Cards rendered for player', player.getId());
 }
+
+
+// Sélectionne tous les boutons
+const buttons = document.querySelectorAll('#buttons .button');
+
+// stocker les fonctions onclick d'origine
+const originalOnClicks = Array.from(buttons).map(button => button.onclick);
+
+// desactiver les boutons
+function disable_buttons() {
+  document.getElementById("buttons").classList.add("disabled");
+  buttons.forEach(button => {
+    button.classList.add('disabled');
+    button.onclick = null; // supprime l'onclick
+    button.style.pointerEvents = 'none';
+  });
+  console.log("BOUTONS DESACTIVEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSSSSSSSSSS");
+}
+
+// activer les boutons
+function enable_buttons() {
+  document.getElementById("buttons").classList.remove("disabled");
+  buttons.forEach((button, index) => {
+    button.classList.remove('disabled');
+    button.onclick = originalOnClicks[index]; // retablit l'onclick
+    button.style.pointerEvents = 'auto';
+  });
+  console.log("BOUTONS ACTIVEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSSSSSSSSSS");
+}

@@ -171,7 +171,8 @@ function updateTurnStatus(message, end_game=false) {
       return;
     }
     if (currentPlayerId === playerId) {
-      showStatusMessage('C’est ton tour !');
+      showStatusMessage('C’est ton tour ! in updateTurnStatus');
+      enable_buttons(); // activer les boutons d'action
     } else {
       showStatusMessage(`C’est le tour du joueur ${currentPlayerId}`);
     }
@@ -335,13 +336,15 @@ function handleServerMessage(message) {
 
     case 'your_turn':
       console.log('Your turn!');
-      showStatusMessage('C’est ton tour !');
+      showStatusMessage('C’est ton tour ! in handleServerMessage');
       showActionMessage('Ton action est attendue.', false);
+      enable_buttons(); // activer les boutons d'action
       break;
 
     case 'ack':
       console.log('Action acknowledgement:', message.detail);
       showActionMessage(message.detail, message.i !== 1);
+      disable_buttons(); // desactiver les boutons d'actions
       break;
 
     case 'user_quit':

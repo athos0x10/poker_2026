@@ -64,6 +64,8 @@ body {
 #buttons.disabled {
     .button {
         background-color: grey;
+        pointer-events: none;
+        cursor: not-allowed; /* Optionnel : change le curseur */
     }
 }
 
