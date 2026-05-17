@@ -8,6 +8,8 @@ import com.projet.poker.engine.network.dto.DTOManager.JoinRequestDTO;
 import com.projet.poker.model.game.Action;
 import com.projet.poker.model.game.PlayerSession;
 import com.projet.poker.model.game.Table;
+import com.projet.poker.service.PortefeuilleService;
+import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -19,9 +21,12 @@ public class GameController {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(GameController.class);
   private final TableManager tableManager;
+  private final PortefeuilleService portefeuilleService;
 
-  public GameController(TableManager tableManager) {
+  public GameController(TableManager tableManager,
+                        PortefeuilleService portefeuilleService) {
     this.tableManager = tableManager;
+    this.portefeuilleService = portefeuilleService;
   }
 
   @MessageMapping("/join") // front envoie sur /app/join
@@ -30,6 +35,23 @@ public class GameController {
         "JOIN request received: tableId={}, playerId={}, seat={}, stack={}",
         request.tableId(), request.playerId(), request.seatNumber(),
         request.initialStack());
+
+    // Retirer la mise initiale du portefeuille de l'utilisateur
+    try {
+      portefeuilleService.retirerFondsByUtilisateurId(
+          request.playerId(), BigDecimal.valueOf(request.initialStack()));
+    } catch (IllegalArgumentException e) {
+      LOGGER.warn("Player {} has insufficient funds for initial stack {}",
+                  request.playerId(), request.initialStack());
+      // Notifier le client que le join a échoué (fonds insuffisants)
+      var maybeEngine = tableManager.getEngine(request.tableId());
+      if (maybeEngine.isPresent() && maybeEngine.get().getNotifier() != null) {
+        maybeEngine.get().getNotifier().notifyActionAck(
+            request.playerId(), false,
+            "Fonds insuffisants pour rejoindre la table");
+      }
+      return; // Ne pas rejoindre si fonds insuffisants
+    }
 
     PlayerSession newPlayer = new PlayerSession(
         request.playerId(), request.initialStack(), request.seatNumber());

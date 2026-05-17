@@ -5,7 +5,8 @@ var tableId = 1;
 var playerId = null;
 var seatNumber = null;
 var playerName = null;
-var initialStack = 1000;
+var initialStack =
+    parseFloat(localStorage.getItem('poker_initial_stack')) || 1000;
 let myPlayer;
 
 
@@ -62,7 +63,7 @@ function connect() {
 /**
  * Envoie l'action de rejoindre la table de poker
  */
-function sendJoin() {
+async function sendJoin() {
   if (!stompClient || !stompClient.connected) {
     console.error('Impossible d’envoyer join : pas connecté.');
     return;
@@ -71,6 +72,25 @@ function sendJoin() {
   console.log(`Sending join request for tableId=${tableId} playerId=${
       playerId} seat=${seatNumber}`);
 
+  // Lire la valeur actuelle du pot de départ (éventuellement mise depuis le
+  // profil)
+  initialStack =
+      parseFloat(localStorage.getItem('poker_initial_stack')) || initialStack;
+
+  // Vérifier côté front que l'utilisateur a assez de fonds (UX)
+  try {
+    const res = await fetch('/api/portefeuille/mon-solde');
+    if (res.ok) {
+      const data = await res.json();
+      const solde = parseFloat(data.solde || 0);
+      if (initialStack > solde) {
+        showActionMessage('Solde insuffisant pour ce pot de départ.', true);
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Impossible de vérifier le solde avant join:', e);
+  }
   // Initialisation locale du joueur
   myPlayer = new Player(playerId, initialStack, true);
   myPlayer.setPosition(seatNumber);
@@ -154,14 +174,13 @@ function AmITheWinner(message) {
   return a.some(objet => objet.id === playerId);
 }
 
-function updateTurnStatus(message, end_game=false) {
-  
+function updateTurnStatus(message, end_game = false) {
   if (end_game) {
     const winner = AmITheWinner(message);
     if (winner) {
-      showStatusMessage("Vous avez gagné !");
+      showStatusMessage('Vous avez gagné !');
     } else {
-      showStatusMessage("Vous avez perdu !");
+      showStatusMessage('Vous avez perdu !');
     }
   } else {
     const currentPlayerId = getCurrentPlayerIdFromInfos(message);
@@ -172,7 +191,7 @@ function updateTurnStatus(message, end_game=false) {
     }
     if (currentPlayerId === playerId) {
       showStatusMessage('C’est ton tour ! in updateTurnStatus');
-      enable_buttons(); // activer les boutons d'action
+      enable_buttons();  // activer les boutons d'action
     } else {
       showStatusMessage(`C’est le tour du joueur ${currentPlayerId}`);
     }
@@ -284,7 +303,7 @@ function handleServerMessage(message) {
 
   switch (message.type) {
     case 'send_hand':
-      console.log("erase board");
+      console.log('erase board');
       clear_board();
       console.log('Received send_hand with cards:', message.cards_ids);
       showActionMessage('Tu as reçu tes cartes.', false);
@@ -338,26 +357,27 @@ function handleServerMessage(message) {
       console.log('Your turn!');
       showStatusMessage('C’est ton tour ! in handleServerMessage');
       showActionMessage('Ton action est attendue.', false);
-      enable_buttons(); // activer les boutons d'action
+      enable_buttons();  // activer les boutons d'action
       break;
 
     case 'ack':
       console.log('Action acknowledgement:', message.detail);
       showActionMessage(message.detail, message.i !== 1);
-      disable_buttons(); // desactiver les boutons d'actions
+      disable_buttons();  // desactiver les boutons d'actions
       break;
 
     case 'user_quit':
       console.log('Joueur quitté :', message.user_id);
       // help me find the player position to hide in the next line
-      const playerToHide = Object.values(otherPlayers).find(
-          (p) => p.data.id === message.user_id);
+      const playerToHide = Object.values(otherPlayers)
+                               .find((p) => p.data.id === message.user_id);
       if (playerToHide) {
         const pos = playerToHide.position;
         const player_place = document.getElementById(`player_place_${pos}`);
         if (player_place) {
           player_place.classList.add('invisible');
-          console.log(`Player ${message.user_id} at position ${pos} is now invisible`);
+          console.log(
+              `Player ${message.user_id} at position ${pos} is now invisible`);
         }
       }
 
@@ -368,7 +388,7 @@ function handleServerMessage(message) {
         display_board(message.finalBoard.map(parseCard));
       }
       console.log('Showdown - Winners:', message.gameWinners);
-      updateTurnStatus(message, end_game=true);
+      updateTurnStatus(message, end_game = true);
       break;
 
     default:

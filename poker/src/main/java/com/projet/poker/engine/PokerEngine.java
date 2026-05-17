@@ -7,6 +7,8 @@ import com.projet.poker.model.game.Action;
 import com.projet.poker.model.game.GameHand;
 import com.projet.poker.model.game.PlayerSession;
 import com.projet.poker.model.game.Table;
+import com.projet.poker.service.PortefeuilleService;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,11 +34,16 @@ public class PokerEngine {
   private static final int MAX_HAND = 5;
   private GameNotifier notifier;
   private GameLogger logger;
+  private PortefeuilleService portefeuilleService;
   private ScheduledExecutorService scheduler =
       Executors.newScheduledThreadPool(1);
   private ScheduledFuture<?> currentTimer;
 
   public PokerEngine() { this.logger = new ConsoleGameLogger(); }
+
+  public void setPortefeuilleService(PortefeuilleService portefeuilleService) {
+    this.portefeuilleService = portefeuilleService;
+  }
 
   public void setNotifier(GameNotifier notifier) { this.notifier = notifier; }
 
@@ -1125,6 +1132,22 @@ public class PokerEngine {
       }
     }
 
+    // Toujours tenter de rembourser le stack restant du joueur au portefeuille
+    if (quittingPlayer != null && quittingPlayer.getCurrentStack() > 0 &&
+        portefeuilleService != null) {
+      double toRefund = quittingPlayer.getCurrentStack();
+      try {
+        // Ajouter au portefeuille
+        portefeuilleService.ajouterFondsByUtilisateurId(
+            quittingPlayer.getId(), BigDecimal.valueOf(toRefund));
+        // Retirer du stack du joueur dans la session de jeu
+        quittingPlayer.withdraw(toRefund);
+      } catch (Exception e) {
+        logger.logError("Erreur lors du remboursement du joueur " +
+                        quittingPlayer.getId());
+      }
+    }
+
     if (table.getGameState() != GameState.WAITING_FOR_PLAYERS &&
         table.getGameState() != GameState.SHOWDOWN &&
         !quittingPlayer.hasFolded()) {
@@ -1138,6 +1161,20 @@ public class PokerEngine {
         }
       }
     } else {
+      // Avant de supprimer le joueur, restituer son stack actuel sur son
+      // portefeuille
+      if (quittingPlayer != null && portefeuilleService != null) {
+        try {
+          portefeuilleService.ajouterFondsByUtilisateurId(
+              quittingPlayer.getId(),
+              BigDecimal.valueOf(quittingPlayer.getCurrentStack()));
+        } catch (Exception e) {
+          // Log but don't prevent removal
+          logger.logError("Erreur lors du remboursement du joueur " +
+                          quittingPlayer.getId());
+        }
+      }
+
       table.getActivePlayers().removeIf(p -> p.getId() == playerId);
     }
   }
@@ -1194,7 +1231,7 @@ public class PokerEngine {
       table.setGameState(GameState.WAITING_FOR_PLAYERS);
 
       // Optionnel : Notifier le Front-end que la partie est en pause (ou
-      // terminée) 
+      // terminée)
       if (notifier != null) {
         notifier.broadcastGamePaused(table.getActivePlayers());
       }

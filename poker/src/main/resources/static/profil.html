@@ -28,6 +28,11 @@
         <p><strong>Pseudo:</strong> <span id="p-login"></span></p>
         <p><strong>Niveau:</strong> <span id="p-niveau"></span></p>
         <p><strong>Solde:</strong> <span id="p-solde" style="color: #4CAF50; font-weight: bold;">0</span> €</p>
+        <p><strong>Pot de départ souhaité (€):</strong></p>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <input id="start-stack" type="number" min="0" step="0.01" style="width:140px;" />
+            <button onclick="sauvegarderStartStack()">Définir</button>
+        </div>
         
         <hr style="border-color: #333;">
         <p><strong>Ma Biographie:</strong></p>
@@ -60,6 +65,7 @@
     if (!token) window.location.href = "auth.html"; // Sécurité : retour au login si pas de token
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
+    var userBalance = 0;
     async function loadData() {
         try {
             // Profil
@@ -73,6 +79,13 @@
             const resS = await fetch('/api/portefeuille/mon-solde', { headers });
             const soldeData = await resS.json();
             document.getElementById('p-solde').innerText = soldeData.solde;
+
+            // Solde utilisateur
+            userBalance = parseFloat(soldeData.solde || 0);
+
+            // Valeur du pot de départ (stockée localement)
+            const saved = localStorage.getItem('poker_initial_stack');
+            document.getElementById('start-stack').value = saved || 1000;
 
             // Amis
             chargerAmis();
@@ -96,6 +109,20 @@
         } else {
             alert("Joueur introuvable.");
         }
+    }
+
+    function sauvegarderStartStack() {
+        const val = parseFloat(document.getElementById('start-stack').value);
+        if (isNaN(val) || val < 0) {
+            alert('Montant invalide');
+            return;
+        }
+        if (val > userBalance) {
+            alert('Montant demandé supérieur au solde disponible.');
+            return;
+        }
+        localStorage.setItem('poker_initial_stack', val);
+        alert('Pot de départ enregistré.');
     }
 
     async function chargerAmis() {
