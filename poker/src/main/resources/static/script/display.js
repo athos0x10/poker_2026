@@ -128,7 +128,7 @@ const originalOnClicks = Array.from(buttons).map(button => button.onclick);
 function disable_buttons() {
   document.getElementById("buttons").classList.add("disabled");
   buttons.forEach(button => {
-    button.classList.add('disabled');
+    // button.classList.add('disabled');
     button.onclick = null; // supprime l'onclick
     button.style.pointerEvents = 'none';
   });
@@ -139,7 +139,7 @@ function disable_buttons() {
 function enable_buttons() {
   document.getElementById("buttons").classList.remove("disabled");
   buttons.forEach((button, index) => {
-    button.classList.remove('disabled');
+    // button.classList.remove('disabled');
     button.onclick = originalOnClicks[index]; // retablit l'onclick
     button.style.pointerEvents = 'auto';
   });

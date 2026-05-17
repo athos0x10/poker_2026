@@ -40,26 +40,10 @@ body {
 /* boutons d'interactions avec l'utilisateur */
 #buttons {
     /* flex-grow: 1; */
-
     display: flex;
     flex-direction: row;
     gap: 10px;
     /* background-color: aqua; */
-
-    .button {
-        background-color: antiquewhite;
-        border-radius: 10px;
-        padding: 10px;
-        width: 80px;
-        /* height: 30px; */
-        text-align: center;
-    
-        user-select: none;
-        text-transform: uppercase;
-    }
-    .button:hover {
-        background-color: aqua;
-    }
 }
 #buttons.disabled {
     .button {
@@ -68,6 +52,25 @@ body {
         cursor: not-allowed; /* Optionnel : change le curseur */
     }
 }
+
+.button {
+    background-color: antiquewhite;
+    border-radius: 10px;
+    padding: 10px;
+    width: 80px;
+    /* height: 30px; */
+    text-align: center;
+    
+    user-select: none;
+    text-transform: uppercase;
+}
+.button:hover {
+    background-color: aqua;
+}
+#quit_button {
+    background-color: red;
+}
+
 
 /* la table de jeu */
 .table_container {
