@@ -1291,6 +1291,18 @@ public class PokerEngine {
    */
   public boolean processAction(Table table, Action action) {
     GameHand gameHand = table.getGameHand();
+    int turnIndex = gameHand.getCurrentTurnIndex();
+
+    if (table.getGameState() == GameState.SHOWDOWN || table.getGameState() == GameState.WAITING_FOR_PLAYERS) {
+      return false;
+    }
+
+    if (turnIndex < 0 || turnIndex >= table.getActivePlayers().size()) {
+      if (notifier != null) {
+        notifier.notifyActionAck(action.getPlayerId(), false, "Action impossible, la table s'est mise à jour.");
+      }
+      return false;
+    }
 
     // Le joueur n'est pas autorisé à jouer si ce n'est pas son tour
     PlayerSession currentPlayer =
