@@ -62,6 +62,9 @@ public class TableManager {
                        ", playerId=" + player.getId() + ", state=" +
                        table.getGameState() + ", activePlayers=" + playerCount);
 
+    if (table.getGameState() != GameState.WAITING_FOR_PLAYERS && table.getGameState() != GameState.SHOWDOWN) {
+        player.setHasFolded(true);
+    }
     if (table.getGameState() == GameState.WAITING_FOR_PLAYERS &&
         playerCount >= 3) {
       System.out.println(

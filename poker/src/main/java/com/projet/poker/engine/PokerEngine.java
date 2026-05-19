@@ -465,8 +465,10 @@ public class PokerEngine {
     }
 
     hand.setType(HandType.CARTE_HAUTE);
+    
+    int limit = Math.min(MAX_HAND, hand.getSortedCards().size());
     hand.setBestFiveCards(
-        new ArrayList<>(hand.getSortedCards().subList(0, MAX_HAND)));
+        new ArrayList<>(hand.getSortedCards().subList(0, limit)));
 
     return;
   }
@@ -1062,16 +1064,20 @@ public class PokerEngine {
    * Méthode à modifier plus tard pour les multi-pots
    */
   private void handleRoundEnding(Table table) {
+    if (currentTimer != null) currentTimer.cancel(false);
+
     List<PlayerSession> survivors = countSurvivors(table);
     List<PlayerSession> activeBettors = countActiveBettors(table);
 
     if (survivors.size() == 1) {
-      // Le gagant remporte le pot
+      // Le gagnant remporte le pot
       PlayerSession winner = survivors.getFirst();
       table.setWinners(Arrays.asList(winner));
       winner.deposit(table.getGameHand().getPotAmount());
       table.getGameHand().setPotAmount(0);
       table.setGameState(GameState.SHOWDOWN);
+
+      evaluateSinglePlayer(winner, table.getGameHand().getCommunityCards());
 
       // Notifier de la victoire par fold
       handleRoundEndingNotify(table, winner);
@@ -1085,8 +1091,25 @@ public class PokerEngine {
       runTheBoard(table);
 
     } else {
-      goNextState(table);
-      handleNextStartingRound(table);
+      table.getGameHand().setCurrentTurnIndex(-1);
+      
+      if (notifier != null) {
+        notifier.broadcastFullGameInfos(table.getActivePlayers(), table);
+      }
+
+      scheduler.schedule(() -> {
+        goNextState(table);
+        handleNextStartingRound(table);
+        
+        if (notifier != null) {
+          notifier.broadcastFullGameInfos(table.getActivePlayers(), table);
+          
+          int nextTurn = table.getGameHand().getCurrentTurnIndex();
+          if (nextTurn >= 0 && nextTurn < table.getActivePlayers().size()) {
+              notifier.notifyPlayerTurn(table.getActivePlayers().get(nextTurn).getId());
+          }
+        }
+      }, 2, TimeUnit.SECONDS);
     }
   }
 
@@ -1116,7 +1139,7 @@ public class PokerEngine {
   }
 
   /* Gère la déconnexion d'un joueur */
-  public void handlePlayerQuit(Table table, long playerId) {
+public void handlePlayerQuit(Table table, long playerId) {
     GameHand gameHand = table.getGameHand();
     List<PlayerSession> activePlayers = table.getActivePlayers();
 
@@ -1125,56 +1148,43 @@ public class PokerEngine {
 
     for (int i = 0; i < activePlayers.size(); i++) {
       if (activePlayers.get(i).getId() == playerId) {
-        activePlayers.get(i).setHasDisconnected(true);
+        activePlayers.get(i).setHasDisconnected(true); // Il sera retiré au prochain clearTable()
         quittingPlayer = activePlayers.get(i);
         quittingPlayerIndex = i;
         break;
       }
     }
 
-    // Toujours tenter de rembourser le stack restant du joueur au portefeuille
-    if (quittingPlayer != null && quittingPlayer.getCurrentStack() > 0 &&
-        portefeuilleService != null) {
+    if (quittingPlayer == null) return;
+
+    if (quittingPlayer.getCurrentStack() > 0 && portefeuilleService != null) {
       double toRefund = quittingPlayer.getCurrentStack();
       try {
-        // Ajouter au portefeuille
         portefeuilleService.ajouterFondsByUtilisateurId(
             quittingPlayer.getId(), BigDecimal.valueOf(toRefund));
-        // Retirer du stack du joueur dans la session de jeu
-        quittingPlayer.withdraw(toRefund);
+        quittingPlayer.withdraw(toRefund); // Son stack en jeu passe à 0
       } catch (Exception e) {
-        logger.logError("Erreur lors du remboursement du joueur " +
-                        quittingPlayer.getId());
+        logger.logError("Erreur lors du remboursement du joueur " + quittingPlayer.getId());
       }
     }
 
-    if (table.getGameState() != GameState.WAITING_FOR_PLAYERS &&
-        table.getGameState() != GameState.SHOWDOWN &&
-        !quittingPlayer.hasFolded()) {
-      quittingPlayer.setHasFolded(true);
+    boolean isGameActive = table.getGameState() != GameState.WAITING_FOR_PLAYERS && 
+                           table.getGameState() != GameState.SHOWDOWN;
 
-      if (gameHand.getCurrentTurnIndex() == quittingPlayerIndex) {
-        startNewTurn(table, gameHand);
-      } else {
-        if (isRoundFinished(table)) {
-          handleRoundEnding(table);
+    if (isGameActive) {
+      if (!quittingPlayer.hasFolded() && !quittingPlayer.isAllIn()) {
+        quittingPlayer.setHasFolded(true);
+
+        if (gameHand.getCurrentTurnIndex() == quittingPlayerIndex) {
+          startNewTurn(table, gameHand);
+        } else {
+          if (isRoundFinished(table)) {
+            if (currentTimer != null) currentTimer.cancel(false);
+            handleRoundEnding(table);
+          }
         }
       }
     } else {
-      // Avant de supprimer le joueur, restituer son stack actuel sur son
-      // portefeuille
-      if (quittingPlayer != null && portefeuilleService != null) {
-        try {
-          portefeuilleService.ajouterFondsByUtilisateurId(
-              quittingPlayer.getId(),
-              BigDecimal.valueOf(quittingPlayer.getCurrentStack()));
-        } catch (Exception e) {
-          // Log but don't prevent removal
-          logger.logError("Erreur lors du remboursement du joueur " +
-                          quittingPlayer.getId());
-        }
-      }
-
       table.getActivePlayers().removeIf(p -> p.getId() == playerId);
     }
   }
@@ -1223,20 +1233,36 @@ public class PokerEngine {
 
   /* Prépare la prochaine main */
   public void prepareNextHand(Table table) {
-    table.getActivePlayers().removeIf(p -> p.getCurrentStack() <= 0);
+      if (table == null || table.getActivePlayers() == null) return;
 
-    if (table.getActivePlayers().size() >= 2) {
-      startNewHand(table);
-    } else {
-      table.setGameState(GameState.WAITING_FOR_PLAYERS);
+      // Au lieu de supprimer le joueur, on réinitialise tout le monde.
+      for (PlayerSession p : table.getActivePlayers()) {
+        p.setBetAmount(0);
+        p.setHasActed(false);
+        p.setAllIn(false);
+        p.getHoleCards().clear();
+        
+        if (p.getCurrentStack() <= 0) {
+          p.setHasFolded(true); // Devient spectateur
+        } else {
+          p.setHasFolded(false); // Prêt à jouer
+        }
+      }
 
-      // Optionnel : Notifier le Front-end que la partie est en pause (ou
-      // terminée)
-      if (notifier != null) {
-        notifier.broadcastGamePaused(table.getActivePlayers());
+      // On compte combien de joueurs ont réellement des jetons pour jouer la main
+      long playableCount = table.getActivePlayers().stream()
+          .filter(p -> p.getCurrentStack() > 0)
+          .count();
+
+      if (playableCount >= 2) {
+        startNewHand(table);
+      } else {
+        table.setGameState(GameState.WAITING_FOR_PLAYERS);
+        if (notifier != null) {
+          notifier.broadcastGamePaused(table.getActivePlayers());
+        }
       }
     }
-  }
 
   /* Evalue la fin de partie en distribuant le pot parmi les joueurs
    * Renvoie les joueurs aillant eu la meilleure main.
@@ -1287,6 +1313,14 @@ public class PokerEngine {
    */
   public boolean processAction(Table table, Action action) {
     GameHand gameHand = table.getGameHand();
+    int turnIndex = gameHand.getCurrentTurnIndex();
+
+    if (turnIndex == -1) {
+      if (notifier != null) {
+        notifier.notifyActionAck(action.getPlayerId(), false, "Distribution en cours, patientez...");
+      }
+      return false;
+    }
 
     // Le joueur n'est pas autorisé à jouer si ce n'est pas son tour
     PlayerSession currentPlayer =
