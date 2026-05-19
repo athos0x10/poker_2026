@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -34,6 +35,9 @@ public class PokerEngine {
   private GameNotifier notifier;
   private GameLogger logger;
   private PortefeuilleService portefeuilleService;
+  private ScheduledExecutorService scheduler =
+      Executors.newScheduledThreadPool(1);
+  private ScheduledFuture<?> currentTimer;
 
   public PokerEngine() { this.logger = new ConsoleGameLogger(); }
 
@@ -1077,17 +1081,26 @@ public class PokerEngine {
       handleRoundEndingNotify(table, winner);
       if (notifier != null) {
         notifier.broadcastFullGameInfos(table.getActivePlayers(), table);
-    }
-    
-    prepareNextHand(table);
+      }
+      scheduler.schedule(
+          () -> { prepareNextHand(table); }, 5, TimeUnit.SECONDS);
 
     } else if (activeBettors.size() <= 1 && survivors.size() > 1) {
-        runTheBoard(table);
+      runTheBoard(table);
 
     } else {
-        goNextState(table);
-        handleNextStartingRound(table);
+      goNextState(table);
+      handleNextStartingRound(table);
     }
+  }
+
+  /* Défini une limite de temps pour l'action d'un joueur */
+  private void startActionTimer(Table table, long playerId) {
+    if (currentTimer != null)
+      currentTimer.cancel(false);
+
+    currentTimer = scheduler.schedule(
+        () -> { handlePlayerQuit(table, playerId); }, 30, TimeUnit.SECONDS);
   }
 
   /*
@@ -1102,6 +1115,7 @@ public class PokerEngine {
       int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
       gameHand.setCurrentTurnIndex(nextTurn);
       handleNextPlayerNotify(table, nextTurn);
+      startActionTimer(table, nextTurn);
     }
   }
 
@@ -1261,7 +1275,7 @@ public class PokerEngine {
     // Notifier les gagnants et les cartes finales
     handleShowdownNotify(table, rankedGroups);
 
-    prepareNextHand(table);
+    scheduler.schedule(() -> { prepareNextHand(table); }, 5, TimeUnit.SECONDS);
 
     return rankedGroups.get(0);
   }
