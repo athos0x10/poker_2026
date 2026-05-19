@@ -110,4 +110,27 @@ public class AmitieService {
     }
     return amisAvecStatut;
   }
+
+  /**
+   * Vérifie si deux utilisateurs sont amis (statut ACCEPTED).
+   */
+  public boolean sontAmis(Long userId, Long otherId) {
+    if (userId.equals(otherId)) {
+      return true;
+    }
+
+    Utilisateur user = utilisateurRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    List<Amitie> amities = amitieRepository.findAllByUser(user);
+
+    for (Amitie a : amities) {
+      if (a.getStatus() != FriendStatus.ACCEPTED) {
+        continue;
+      }
+      if (a.getDemandeur().getId().equals(otherId) || a.getReceveur().getId().equals(otherId)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

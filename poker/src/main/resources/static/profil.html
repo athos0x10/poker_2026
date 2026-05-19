@@ -150,6 +150,7 @@
                 }
             } else if (f.status.toUpperCase() === "ACCEPTED") {
                 statusText = "Ami";
+                actions = `<button class="btn-small" onclick="voirProfilAmi(${f.amiId})">Voir profil</button>`;
             }
 
             list.innerHTML += `
@@ -164,6 +165,10 @@
     async function repondreAmi(amitieId, accepter) {
         await fetch('/api/amities/reponse', { method: 'POST', headers, body: JSON.stringify({ amitieId, accepter }) });
         chargerAmis(); // On recharge la liste
+    }
+
+    function voirProfilAmi(amiId) {
+        window.location.href = `friend-profil.html?id=${amiId}`;
     }
 
     function rejoindrePartie() {

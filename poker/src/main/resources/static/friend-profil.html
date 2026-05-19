@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profil d'un ami</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; max-width: 700px; margin: auto; }
+        button { background: #ffca28; color: black; border: none; padding: 8px 12px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        img { border-radius: 50%; width: 80px; height: 80px; object-fit: cover; margin-bottom: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .error { color: #f44336; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <h2>Profil de l'ami</h2>
+        <button onclick="retourProfil()">Retour</button>
+    </div>
+
+    <div id="profil-container">
+        <img id="p-image" src="" alt="Photo de profil" style="display:none;" />
+        <p><strong>Pseudo :</strong> <span id="p-login">...</span></p>
+        <p><strong>Niveau :</strong> <span id="p-niveau">...</span></p>
+        <p><strong>Points d'expérience :</strong> <span id="p-xp">...</span></p>
+        <p><strong>Biographie :</strong></p>
+        <p id="p-bio" style="white-space: pre-wrap;">...</p>
+    </div>
+
+    <p id="error-message" class="error"></p>
+</div>
+
+<script>
+    const token = localStorage.getItem('poker_token');
+    if (!token) {
+        window.location.href = 'auth.html';
+    }
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const params = new URLSearchParams(window.location.search);
+    const amiId = params.get('id');
+
+    if (!amiId) {
+        document.getElementById('profil-container').style.display = 'none';
+        document.getElementById('error-message').innerText = 'Aucun identifiant de profil fourni.';
+    } else {
+        loadFriendProfile();
+    }
+
+    async function loadFriendProfile() {
+        try {
+            const res = await fetch(`/api/profils/${amiId}`, { headers });
+            if (!res.ok) {
+                if (res.status === 401) {
+                    window.location.href = 'auth.html';
+                    return;
+                }
+                const err = await res.json().catch(() => null);
+                const message = err?.error || 'Impossible de charger le profil.';
+                document.getElementById('profil-container').style.display = 'none';
+                document.getElementById('error-message').innerText = message;
+                return;
+            }
+
+            const profil = await res.json();
+            const image = document.getElementById('p-image');
+            if (profil.imageUrl) {
+                image.src = profil.imageUrl;
+                image.style.display = 'block';
+            }
+            document.getElementById('p-login').innerText = profil.login;
+            document.getElementById('p-niveau').innerText = profil.niveau;
+            document.getElementById('p-xp').innerText = profil.experiencePoints;
+            document.getElementById('p-bio').innerText = profil.biographie || 'Aucune biographie.';
+        } catch (e) {
+            console.error(e);
+            document.getElementById('profil-container').style.display = 'none';
+            document.getElementById('error-message').innerText = 'Erreur de connexion au serveur.';
+        }
+    }
+
+    function retourProfil() {
+        window.location.href = 'profil.html';
+    }
+</script>
+</body>
+</html>

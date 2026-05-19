@@ -53,11 +53,13 @@ public class AmitieController {
       // Si c'est moi le demandeur, l'ami est le récepteur
       if (a.getReceveur().getId().equals(myId)) {
         dto.setAmiLogin(a.getDemandeur().getLogin());
+        dto.setAmiId(a.getDemandeur().getId());
         dto.setIsReceiver(
             true); // C'est moi qui ai reçu la demande -> BOUTONS OK
       } else {
         // Sinon, je suis le demandeur
         dto.setAmiLogin(a.getReceveur().getLogin());
+        dto.setAmiId(a.getReceveur().getId());
         dto.setIsReceiver(false); // J'ai envoyé la demande -> "EN ATTENTE"
       }
 

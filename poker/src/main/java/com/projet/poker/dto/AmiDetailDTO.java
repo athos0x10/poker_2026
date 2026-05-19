@@ -3,6 +3,7 @@ package com.projet.poker.dto;
 public class AmiDetailDTO {
 
   private Long amitieId;
+  private Long amiId;
   private String amiLogin;
   private String status;
   private boolean
@@ -11,6 +12,10 @@ public class AmiDetailDTO {
   public Long getAmitieId() { return amitieId; }
 
   public void setAmitieId(Long amitieId) { this.amitieId = amitieId; }
+
+  public Long getAmiId() { return amiId; }
+
+  public void setAmiId(Long amiId) { this.amiId = amiId; }
 
   public String getAmiLogin() { return amiLogin; }
 
