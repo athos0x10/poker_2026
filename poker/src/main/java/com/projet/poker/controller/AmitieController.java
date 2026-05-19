@@ -2,6 +2,7 @@ package com.projet.poker.controller;
 
 import com.projet.poker.dto.AmiDetailDTO;
 import com.projet.poker.model.persist.Amitie;
+import com.projet.poker.model.persist.Profil;
 import com.projet.poker.model.persist.Utilisateur;
 import com.projet.poker.security.SessionManager;
 import com.projet.poker.service.AmitieService;
@@ -108,5 +109,45 @@ public class AmitieController {
       amitieService.supprimerOuRefuser(amitieId);
     }
     return ResponseEntity.ok(Map.of("message", "Action enregistrée"));
+  }
+
+  // Récupérer le profil d'un ami à partir de l'amitieId
+  @GetMapping("/profil/{amitieId}")
+  public ResponseEntity<?> getProfilAmi(@RequestHeader("Authorization") String token,
+                                        @PathVariable Amitie amitie) {
+    Long myId = sessionManager.getUserId(token);
+    if (myId == null) {
+      return ResponseEntity.status(401).build();
+    }
+
+
+
+      // Sécurité : On vérifie que l'utilisateur connecté fait bien partie de cette relation
+      if (!amitie.getDemandeur().getId().equals(myId) && !amitie.getReceveur().getId().equals(myId)) {
+        return ResponseEntity.status(403).body(Map.of("error", "Vous ne faites pas partie de cette amitié."));
+      }
+
+      // 2. On détermine qui est l'ami
+      Utilisateur ami;
+      if (amitie.getDemandeur().getId().equals(myId)) {
+        ami = amitie.getReceveur();
+      } else {
+        ami = amitie.getDemandeur();
+      }
+
+      // 3. On construit le DTO ProfilResponse avec les données de l'ami
+      com.projet.poker.dto.ProfilResponse response = new com.projet.poker.dto.ProfilResponse();
+      response.setLogin(ami.getLogin());
+      response.setEmail(ami.getEmail());
+      
+    
+      Profil profil = ami.getProfil();
+      // Ajuste les getters ci-dessous selon les variables réelles de ton entité Utilisateur (ou son Profil lié)
+      response.setBiographie(profil.getBiographie()); 
+      response.setNiveau(profil.getNiveau());
+      response.setLogin(ami.getLogin());
+
+      return ResponseEntity.ok(response);
+
   }
 }

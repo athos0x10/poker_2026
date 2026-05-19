@@ -22,7 +22,17 @@
     <button onclick="logout()">Se déconnecter</button>
 </div>
 
-<div class="grid">
+<div class="grid" id="profil-ami" style="display: none;">
+    <!-- profil de ... get exp, nom, login a partir amitie dans fonction -->
+     <h3>Profil</h3>
+        <p><strong>Pseudo:</strong> <span id="a-login"></span></p>
+        <p><strong>Niveau:</strong> <span id="a-niveau"></span></p>
+        <p><strong>Biographie:</strong></p>
+        <textarea id="a-bio" rows="4" readonly></textarea>
+        <button onclick="retourProfil()">Retour</button>
+</div>
+
+<div class="grid" id="mon-profil">
     <div class="card">
         <h3>Mon Profil</h3>
         <p><strong>Pseudo:</strong> <span id="p-login"></span></p>
@@ -150,6 +160,9 @@
                 }
             } else if (f.status.toUpperCase() === "ACCEPTED") {
                 statusText = "Ami";
+                actions = `
+                    <button class="btn-small btn-green" onclick="voirProfil(${f})">Voir Profil</button>
+                    `;
             }
 
             list.innerHTML += `
@@ -159,6 +172,43 @@
                 </div>
             `;
         });
+    }
+
+
+    async function voirProfil(amitie) {
+        try {
+            // 1. Appel API pour récupérer le profil de l'ami via l'ID de l'amitié
+            // (Vérifie bien que ton URL Backend correspond à ça, par exemple /api/profils/ami/{id})
+            const res = await fetch(`/api/profils/ami/${amitie.getId()}`, { headers });
+            
+            if (!res.ok) {
+                alert("Impossible de charger le profil de cet ami.");
+                return;
+            }
+            
+            const profilAmi = await res.json(); // Reçoit l'objet ProfilResponse
+
+            // 2. Injection des données de l'ami dans le HTML
+            //document.getElementById('a-login-header').innerText = profilAmi.login;
+            document.getElementById('a-login').innerText = profilAmi.login;
+            document.getElementById('a-niveau').innerText = profilAmi.niveau || "1";
+            //document.getElementById('a-xp').innerText = profilAmi.experiencePoints || "0";
+            document.getElementById('a-bio').value = profilAmi.biographie || "Cet utilisateur n'a pas encore écrit de biographie.";
+
+            // 3. Bascule visuelle (Changement de point de vue)
+            document.getElementById('mon-profil').style.display = 'none';
+            document.getElementById('profil-ami').style.display = 'grid';
+            
+        } catch (e) {
+            console.error("Erreur lors du chargement du profil ami :", e);
+            alert("Une erreur est survenue.");
+        }
+    }
+
+    function retourProfil() {
+        // Permet de revenir sur "Mon Profil" en inversant les affichages
+        document.getElementById('profil-ami').style.display = 'none';
+        document.getElementById('mon-profil').style.display = 'grid';
     }
 
     async function repondreAmi(amitieId, accepter) {
