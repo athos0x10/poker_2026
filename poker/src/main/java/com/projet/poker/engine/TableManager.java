@@ -63,7 +63,7 @@ public class TableManager {
                        table.getGameState() + ", activePlayers=" + playerCount);
 
     if (table.getGameState() == GameState.WAITING_FOR_PLAYERS &&
-        playerCount >= 2) {
+        playerCount >= 3) {
       System.out.println(
           "TableManager.joinTable: starting new hand for tableId=" + tableId +
           " with " + playerCount + " players.");

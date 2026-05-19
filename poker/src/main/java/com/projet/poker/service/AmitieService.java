@@ -5,11 +5,11 @@ import com.projet.poker.model.persist.FriendStatus;
 import com.projet.poker.model.persist.Utilisateur;
 import com.projet.poker.repository.AmitieRepository;
 import com.projet.poker.repository.UtilisateurRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AmitieService {
@@ -96,15 +96,16 @@ public class AmitieService {
    * Lister les amis d'un utilisateur (confirmés et en attente)
    */
   public List<Amitie> listerAmis(Long userId) {
-    Utilisateur user = utilisateurRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    Utilisateur user = utilisateurRepository.findById(userId).orElseThrow(
+        () -> new RuntimeException("Utilisateur introuvable"));
 
     // Récupérer les amitiés où l'utilisateur est le demandeur ou le receveur
     List<Amitie> amities = amitieRepository.findAllByUser(user);
     List<Amitie> amisAvecStatut = new ArrayList<>();
     for (Amitie a : amities) {
       // On ne garde que les amitiés en statut ACCEPTED ou PENDING
-      if (a.getStatus() == FriendStatus.ACCEPTED || a.getStatus() == FriendStatus.PENDING) {
+      if (a.getStatus() == FriendStatus.ACCEPTED ||
+          a.getStatus() == FriendStatus.PENDING) {
         amisAvecStatut.add(a);
       }
     }
@@ -119,15 +120,16 @@ public class AmitieService {
       return true;
     }
 
-    Utilisateur user = utilisateurRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    Utilisateur user = utilisateurRepository.findById(userId).orElseThrow(
+        () -> new RuntimeException("Utilisateur introuvable"));
     List<Amitie> amities = amitieRepository.findAllByUser(user);
 
     for (Amitie a : amities) {
       if (a.getStatus() != FriendStatus.ACCEPTED) {
         continue;
       }
-      if (a.getDemandeur().getId().equals(otherId) || a.getReceveur().getId().equals(otherId)) {
+      if (a.getDemandeur().getId().equals(otherId) ||
+          a.getReceveur().getId().equals(otherId)) {
         return true;
       }
     }
