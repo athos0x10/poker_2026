@@ -124,10 +124,9 @@ public abstract class JsonNotifier implements GameNotifier {
                                 List<PlayerSession> winners) {
     List<WinnerInfoDTO> winDtos =
         winners.stream()
-            .map(w -> new WinnerInfoDTO(
-                    w.getId(), 
-                    w.getFinalHand() != null ? w.getFinalHand().toString() : "WIN_BY_FOLD", // CORRECTION ICI
-                    mapCards(w.getHoleCards())))
+            .map(w
+                 -> new WinnerInfoDTO(w.getId(), w.getFinalHand().toString(),
+                                      mapCards(w.getHoleCards())))
             .toList();
 
     broadcast(players,
