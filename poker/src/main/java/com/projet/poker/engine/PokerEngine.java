@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -35,9 +34,6 @@ public class PokerEngine {
   private GameNotifier notifier;
   private GameLogger logger;
   private PortefeuilleService portefeuilleService;
-  private ScheduledExecutorService scheduler =
-      Executors.newScheduledThreadPool(1);
-  private ScheduledFuture<?> currentTimer;
 
   public PokerEngine() { this.logger = new ConsoleGameLogger(); }
 
@@ -465,8 +461,10 @@ public class PokerEngine {
     }
 
     hand.setType(HandType.CARTE_HAUTE);
+    
+    int limit = Math.min(MAX_HAND, hand.getSortedCards().size());
     hand.setBestFiveCards(
-        new ArrayList<>(hand.getSortedCards().subList(0, MAX_HAND)));
+        new ArrayList<>(hand.getSortedCards().subList(0, limit)));
 
     return;
   }
@@ -1066,37 +1064,30 @@ public class PokerEngine {
     List<PlayerSession> activeBettors = countActiveBettors(table);
 
     if (survivors.size() == 1) {
-      // Le gagant remporte le pot
+      // Le gagnant remporte le pot
       PlayerSession winner = survivors.getFirst();
       table.setWinners(Arrays.asList(winner));
       winner.deposit(table.getGameHand().getPotAmount());
       table.getGameHand().setPotAmount(0);
       table.setGameState(GameState.SHOWDOWN);
 
+      evaluateSinglePlayer(winner, table.getGameHand().getCommunityCards());
+
       // Notifier de la victoire par fold
       handleRoundEndingNotify(table, winner);
       if (notifier != null) {
         notifier.broadcastFullGameInfos(table.getActivePlayers(), table);
-      }
-      scheduler.schedule(
-          () -> { prepareNextHand(table); }, 5, TimeUnit.SECONDS);
+    }
+    
+    prepareNextHand(table);
 
     } else if (activeBettors.size() <= 1 && survivors.size() > 1) {
-      runTheBoard(table);
+        runTheBoard(table);
 
     } else {
-      goNextState(table);
-      handleNextStartingRound(table);
+        goNextState(table);
+        handleNextStartingRound(table);
     }
-  }
-
-  /* Défini une limite de temps pour l'action d'un joueur */
-  private void startActionTimer(Table table, long playerId) {
-    if (currentTimer != null)
-      currentTimer.cancel(false);
-
-    currentTimer = scheduler.schedule(
-        () -> { handlePlayerQuit(table, playerId); }, 30, TimeUnit.SECONDS);
   }
 
   /*
@@ -1111,7 +1102,6 @@ public class PokerEngine {
       int nextTurn = findNextPlayer(table, gameHand.getCurrentTurnIndex());
       gameHand.setCurrentTurnIndex(nextTurn);
       handleNextPlayerNotify(table, nextTurn);
-      startActionTimer(table, nextTurn);
     }
   }
 
@@ -1271,7 +1261,7 @@ public class PokerEngine {
     // Notifier les gagnants et les cartes finales
     handleShowdownNotify(table, rankedGroups);
 
-    scheduler.schedule(() -> { prepareNextHand(table); }, 5, TimeUnit.SECONDS);
+    prepareNextHand(table);
 
     return rankedGroups.get(0);
   }
